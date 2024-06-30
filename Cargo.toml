@@ -5,3 +5,9 @@ edition = "2021"
 
 [dependencies]
 actix-web = "4"
+clap = { version = "4.5.8", features = ["derive"] }
+config = "0.14.0"
+dotenv = "0.15.0"
+mime = "0.3.17"
+serde = "1.0.203"
+thiserror = "1.0.61"

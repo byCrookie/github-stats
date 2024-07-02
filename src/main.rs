@@ -10,6 +10,7 @@ use std::{
 };
 use thiserror::Error;
 
+mod icons;
 mod stats;
 mod toplangs;
 
@@ -111,7 +112,7 @@ async fn main() -> Result<(), Error> {
     };
 
     crate::stats::test();
-    crate::toplangs::test();
+    // crate::toplangs::test();
 
     HttpServer::new(move || {
         App::new()

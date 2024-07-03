@@ -1,11 +1,10 @@
 use anyhow::{anyhow, Ok};
 use reqwest::header::{
-    self, HeaderMap, HeaderName, HeaderValue, ACCEPT, AUTHORIZATION, LINK, USER_AGENT,
+    HeaderMap, HeaderName, HeaderValue, ACCEPT, AUTHORIZATION, LINK, USER_AGENT,
 };
 use reqwest::Client;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::HashMap;
-use std::str::FromStr;
 use url::Url;
 
 #[derive(Debug)]
@@ -65,12 +64,15 @@ async fn fetch_all_pages<T: DeserializeOwned>(
     while let Some(url) = next_url.take() {
         println!("Call {}", url.as_str());
         let response = client.get(url.as_str()).send().await?;
-        // println!("{:?}", response);
-        // println!();
         if response.status().is_success() {
             let headers = response.headers().clone();
             println!("Headers {:?}", headers);
             let result: SearchResult<T> = response.json().await?;
+
+            if result.incomplete_results {
+                return Err(anyhow!("Fetch was incomplete"));
+            }
+
             println!("Count {}", result.items.len());
             all_items.extend(result.items);
             next_url = parse_next_url(&headers)?;

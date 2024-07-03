@@ -8,36 +8,32 @@ use std::{
     io::{self, Error},
     time::SystemTime,
 };
-use thiserror::Error;
 
+mod github;
 mod icons;
 mod stats;
 mod toplangs;
 
 const ONE_DAY: u64 = 86400;
 
-#[derive(Error, Debug)]
-pub enum StatsError {
-    #[error("invalid config")]
-    InvalidConfig(#[from] io::Error),
-    #[error("unknown error")]
-    Unknown,
-}
-
 #[derive(Debug, Deserialize, Serialize, Clone)]
 struct Config {
     cache_seconds: u64,
+    github_user: String,
     github_token: String,
 }
 
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 struct Args {
-    #[arg(short, long, default_value = "")]
-    github_token: String,
-
-    #[arg(short, long, default_value_t = ONE_DAY)]
+    #[arg(long, default_value_t = ONE_DAY)]
     cache_seconds: u64,
+
+    #[arg(long, default_value = "")]
+    github_user: String,
+
+    #[arg(long, default_value = "")]
+    github_token: String,
 }
 
 impl Config {
@@ -52,11 +48,14 @@ impl Config {
                 .separator("__"),
         );
         cfg_builder = cfg_builder.add_source(File::with_name(".env").required(false));
+        if args.cache_seconds != ONE_DAY {
+            cfg_builder = cfg_builder.set_override("cache_seconds", args.cache_seconds)?;
+        }
         if !args.github_token.is_empty() {
             cfg_builder = cfg_builder.set_override("github_token", args.github_token)?;
         }
-        if args.cache_seconds != ONE_DAY {
-            cfg_builder = cfg_builder.set_override("cache_seconds", args.cache_seconds)?;
+        if !args.github_user.is_empty() {
+            cfg_builder = cfg_builder.set_override("github_user", args.github_user)?;
         }
         let config = cfg_builder.build()?;
         config.try_deserialize()
@@ -70,7 +69,7 @@ async fn root_endpoint() -> impl Responder {
 
 #[get("/config")]
 async fn config_endpoint(config: Data<Config>) -> impl Responder {
-    HttpResponse::Ok().body(format!("{} {}", config.cache_seconds, config.github_token))
+    HttpResponse::Ok().body(format!("{:#?}", config))
 }
 
 #[get("/cache")]
@@ -87,7 +86,7 @@ async fn cache_endpoint(config: Data<Config>) -> impl Responder {
                 ONE_DAY
             ),
         ))
-        .body(format!("{:?}", now))
+        .body(format!("{:#?}", now))
 }
 
 #[get("/stats")]
@@ -111,7 +110,10 @@ async fn main() -> Result<(), Error> {
         Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err.to_string())),
     };
 
-    crate::stats::test();
+    crate::github::test(&config.github_user, &config.github_token)
+        .await
+        .unwrap();
+    // crate::stats::test();
     // crate::toplangs::test();
 
     HttpServer::new(move || {

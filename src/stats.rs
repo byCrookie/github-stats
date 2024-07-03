@@ -79,5 +79,5 @@ pub fn test() {
     let title = "GitHub Stats";
 
     let svg = render_stats_card(total_stars, total_commits, title);
-    println!("{}", svg);
+    println!("{:#?}", svg);
 }

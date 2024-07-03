@@ -60,59 +60,68 @@ async fn fetch_all_pages<T: DeserializeOwned>(
     initial_url: &str,
 ) -> Result<SearchResult<T>, anyhow::Error> {
     let mut all_items = Vec::new();
-    let mut total_count = 0;
-    let mut incomplete_results = false;
-    let mut next_url = initial_url.to_string();
+    let mut next_url = Some(Url::parse(initial_url)?);
 
-    while !next_url.is_empty() {
-        let response = client.get(&next_url).send().await?;
+    while let Some(url) = next_url.take() {
+        println!("Call {}", url.as_str());
+        let response = client.get(url.as_str()).send().await?;
+        // println!("{:?}", response);
+        // println!();
         if response.status().is_success() {
             let headers = response.headers().clone();
+            println!("Headers {:?}", headers);
             let result: SearchResult<T> = response.json().await?;
-            total_count = result.total_count;
-            incomplete_results = result.incomplete_results;
+            println!("Count {}", result.items.len());
             all_items.extend(result.items);
-
-            if let Some(link_header) = headers.get(LINK) {
-                println!("{:?}", link_header);
-                let links = parse_link_header(link_header.to_str().unwrap());
-                println!("{:?}", links);
-                if let Some(next) = links.get("next") {
-                    next_url = next.to_string();
-                } else {
-                    next_url = "".to_string();
-                }
-            } else {
-                next_url = "".to_string();
-            }
+            next_url = parse_next_url(&headers)?;
+            println!("Next {:?}", next_url);
+            println!();
         } else {
             return Err(anyhow!("Failed to fetch data: {}", response.status()));
         }
     }
 
     Ok(SearchResult {
-        total_count,
-        incomplete_results,
+        total_count: all_items.len(),
+        incomplete_results: false,
         items: all_items,
     })
 }
 
-fn parse_link_header(header: &str) -> HashMap<String, Url> {
+fn parse_next_url(headers: &HeaderMap) -> Result<Option<Url>, anyhow::Error> {
+    if let Some(link_header) = headers.get(LINK) {
+        let link_str = link_header.to_str()?;
+        let links = parse_link_header(link_str)?;
+        println!("Links {:?}", links);
+        if let Some(next) = links.get("next") {
+            return Ok(Some(next.clone()));
+        }
+    }
+
+    Ok(None)
+}
+
+fn parse_link_header(header: &str) -> Result<HashMap<String, Url>, anyhow::Error> {
     let mut links = HashMap::new();
     for link in header.split(',') {
         let parts: Vec<&str> = link.split(';').collect();
         if parts.len() == 2 {
-            if let Result::Ok(url) =
-                Url::parse(parts[0].trim_matches(|c| c == '<' || c == '>').trim())
-            {
+            if let Result::Ok(url) = Url::parse(parts[0].replace("<", "").replace(">", "").trim()) {
                 if let Some(rel) = parts[1].split('=').nth(1) {
                     let rel = rel.trim_matches('"').trim();
                     links.insert(rel.to_string(), url);
                 }
+            } else {
+                return Err(anyhow!("Failed to parse link in link header: {}", parts[0]));
             }
+        } else {
+            return Err(anyhow!(
+                "Link in link header as more than two parts: {:?}",
+                parts
+            ));
         }
     }
-    links
+    Ok(links)
 }
 
 impl Stats {
@@ -140,7 +149,9 @@ impl Stats {
 
         let repo_result: SearchResult<Repository> = fetch_all_pages(
             &client,
-            &format!("https://api.github.com/search/repositories?q=user:{github_user}"),
+            &format!(
+                "https://api.github.com/search/repositories?q=user:{github_user}&per_page=100"
+            ),
         )
         .await?;
 
@@ -152,7 +163,7 @@ impl Stats {
 
         let commit_result: SearchResult<Commit> = fetch_all_pages(
             &client,
-            &format!("https://api.github.com/search/commits?q=author:{github_user}"),
+            &format!("https://api.github.com/search/commits?q=author:{github_user}&per_page=100"),
         )
         .await?;
 

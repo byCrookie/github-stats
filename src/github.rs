@@ -1,4 +1,4 @@
-use anyhow::{anyhow, Ok};
+use anyhow::anyhow;
 use log::debug;
 use reqwest::header::{
     HeaderMap, HeaderName, HeaderValue, ACCEPT, AUTHORIZATION, LINK, USER_AGENT,
@@ -6,7 +6,12 @@ use reqwest::header::{
 use reqwest::Client;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::HashMap;
+use std::time::{Duration, UNIX_EPOCH};
+use tokio::time::sleep;
 use url::Url;
+
+const MAX_RETRIES: u32 = 2;
+const INITIAL_BACKOFF: u64 = 2;
 
 #[derive(Debug)]
 struct Stats {
@@ -49,10 +54,120 @@ struct CommitAuthor {
 }
 
 #[derive(Deserialize, Serialize, Debug)]
+struct Language {
+    name: String,
+    color: String,
+    size: u64,
+}
+
+#[derive(Deserialize, Serialize, Debug)]
 struct SearchResult<T> {
     total_count: usize,
     incomplete_results: bool,
     items: Vec<T>,
+}
+
+async fn make_github_request(
+    client: &Client,
+    url: &str,
+) -> Result<reqwest::Response, anyhow::Error> {
+    let mut retries = 0;
+    let mut backoff = INITIAL_BACKOFF;
+
+    loop {
+        let response = client.get(url).send().await;
+
+        match response {
+            Ok(resp) => {
+                let headers = resp.headers().clone();
+                if resp.status() == reqwest::StatusCode::OK {
+                    if let Some(rate_limit) = ratelimit_remaining(&headers) {
+                        if rate_limit == 0 {
+                            debug!("Primary rate limit exceeded. Rate limit remaining is zero");
+                            if let Some(retry_after) = ratelimit_reset(&headers) {
+                                debug!("Primary rate limit exceeded, sleeping for {} seconds", retry_after);
+                                sleep(Duration::from_secs(retry_after)).await;
+                                continue;
+                            }
+                        }
+                    }
+                }
+
+                if let Some(retry_after) = retry_after(&headers) {
+                    debug!("Secondary rate limit exceeded, sleeping for {} seconds", retry_after);
+                    sleep(Duration::from_secs(retry_after)).await;
+                    continue;
+                }
+
+                let retry_http_codes: Vec<reqwest::StatusCode> = vec![
+                    reqwest::StatusCode::REQUEST_TIMEOUT,
+                    reqwest::StatusCode::TOO_MANY_REQUESTS,
+                    reqwest::StatusCode::INTERNAL_SERVER_ERROR,
+                    reqwest::StatusCode::BAD_GATEWAY,
+                    reqwest::StatusCode::SERVICE_UNAVAILABLE,
+                    reqwest::StatusCode::GATEWAY_TIMEOUT,
+                ];
+
+
+                if resp.status().is_success() {
+                    return Ok(resp);
+                } else if retry_http_codes.contains(&resp.status()) {
+                    debug!("Request failed with status: {}. Retrying...", resp.status());
+                } else {
+                    return Err(anyhow!("Request failed with status: {}.", resp.status()));
+                }
+            }
+            Err(err) => {
+                return Err(anyhow!("Failed to send request: {err}"));
+            }
+        }
+
+        if retries >= MAX_RETRIES {
+            return Err(anyhow!("Max retries of {MAX_RETRIES} reached"));
+        }
+
+        retries += 1;
+        sleep(Duration::from_secs(backoff)).await;
+        backoff *= 2;
+    }
+}
+
+fn ratelimit_remaining(headers: &HeaderMap) -> Option<u64> {
+    if let Some(rate_limit_remaining_header) = headers.get("x-ratelimit-remaining") {
+        if let Ok(rate_limit_remaining) = rate_limit_remaining_header.to_str() {
+            if let Ok(rate_limit) = rate_limit_remaining.parse::<u64>() {
+                return Some(rate_limit);
+            }
+        }
+    }
+    None
+}
+
+fn ratelimit_reset(headers: &HeaderMap) -> Option<u64> {
+    if let Some(rate_limit_reset_header) = headers.get("x-ratelimit-reset") {
+        if let Ok(rate_limit_reset) = rate_limit_reset_header.to_str() {
+            if let Ok(reset_timestamp) = rate_limit_reset.parse::<u64>() {
+                if let Ok(now) = std::time::SystemTime::now().duration_since(UNIX_EPOCH) {
+                    let now_secs = now.as_secs();
+                    if reset_timestamp > now_secs {
+                        return Some(reset_timestamp - now_secs);
+                    }
+                }
+            }
+        }
+    }
+    None
+}
+
+fn retry_after(headers: &HeaderMap) -> Option<u64> {
+    if let Some(retry_after_header) = headers.get("retry-after") {
+        if let Ok(retry_after) = retry_after_header.to_str() {
+            if let Ok(retry_after_seconds) = retry_after.parse::<u64>() {
+                return Some(retry_after_seconds);
+            }
+        }
+    }
+    None
 }
 
 async fn fetch_all_pages<T: DeserializeOwned>(
@@ -66,7 +181,7 @@ async fn fetch_all_pages<T: DeserializeOwned>(
 
     while let Some(url) = next_url.take() {
         debug!("Call {}", url.as_str());
-        let response = client.get(url.as_str()).send().await?;
+        let response = make_github_request(&client, url.as_str()).await?;
         if response.status().is_success() {
             let headers = response.headers().clone();
             debug!("Headers {:?}", headers);
@@ -114,7 +229,7 @@ fn parse_link_header(header: &str) -> Result<HashMap<String, Url>, anyhow::Error
     for link in header.split(',') {
         let parts: Vec<&str> = link.split(';').collect();
         if parts.len() == 2 {
-            if let Result::Ok(url) = Url::parse(parts[0].replace("<", "").replace(">", "").trim()) {
+            if let Ok(url) = Url::parse(parts[0].replace("<", "").replace(">", "").trim()) {
                 if let Some(rel) = parts[1].split('=').nth(1) {
                     let rel = rel.trim_matches('"').trim();
                     links.insert(rel.to_string(), url);
@@ -169,14 +284,13 @@ impl Stats {
             .map(|repo| repo.stargazers_count)
             .sum();
 
-        let commit_result: SearchResult<Commit> = client
-            .get(format!(
-                "https://api.github.com/search/commits?q=author:{github_user}"
-            ))
-            .send()
-            .await?
-            .json()
-            .await?;
+        let commit_result: SearchResult<Commit> = make_github_request(
+            &client,
+            &format!("https://api.github.com/search/commits?q=author:{github_user}"),
+        )
+        .await?
+        .json()
+        .await?;
 
         let total_commits = commit_result.total_count;
 

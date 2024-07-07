@@ -1,4 +1,4 @@
-<svg width="300" height="245" viewBox="0 0 300 245" xmlns="http://www.w3.org/2000/svg">
+<svg width="300" height="212.5" viewBox="0 0 300 212.5" xmlns="http://www.w3.org/2000/svg">
             <style>
                 .title {
                     font: 600 18px 'Segoe UI', Ubuntu, 'Helvetica Neue', Sans-Serif; fill: #fff;
@@ -10,6 +10,10 @@
                 @keyframes growWidthAnimation {
                     from { width: 0; }
                     to { width: 100%; }
+                }
+                @keyframes fadeInAnimation {
+                    from { opacity: 0; }
+                    to { opacity: 1; }
                 }
                 .stat {
                     font: 600 14px 'Segoe UI', Ubuntu, "Helvetica Neue", Sans-Serif;
@@ -30,23 +34,134 @@
                 .lang-progress {
                     animation: growWidthAnimation 0.6s ease-in-out forwards;
                 }
-            </style><text x='25' y='30' class='title'>Top Languages</text>
-<rect x='0' y='0' width='300' height='245' rx='4.5' fill='#151515' stroke='#fff'/>
-<g class="stagger" style="animation-delay: 450ms">
-                <text x="2" y="15" class="lang-name">Rust</text>
-                <text x="215" y="34" class="lang-name">40.00%</text>
-                <rect x="0" y="25" width="205" height="8" fill="#DEA584" class="lang-progress" />
-            </g><g class="stagger" style="animation-delay: 600ms">
-                <text x="2" y="15" class="lang-name">JavaScript</text>
-                <text x="215" y="34" class="lang-name">30.00%</text>
-                <rect x="0" y="25" width="205" height="8" fill="#F0DB4F" class="lang-progress" />
-            </g><g class="stagger" style="animation-delay: 750ms">
-                <text x="2" y="15" class="lang-name">Python</text>
-                <text x="215" y="34" class="lang-name">20.00%</text>
-                <rect x="0" y="25" width="205" height="8" fill="#306998" class="lang-progress" />
-            </g><g class="stagger" style="animation-delay: 900ms">
-                <text x="2" y="15" class="lang-name">Go</text>
-                <text x="215" y="34" class="lang-name">10.00%</text>
-                <rect x="0" y="25" width="205" height="8" fill="#00ADD8" class="lang-progress" />
-            </g>
+                #rect-mask rect {
+                    animation: slideInAnimation 1s ease-in-out forwards;
+                }
+            </style><rect x='0' y='0' width='300' height='212.5' rx='4.5' fill='#151515' stroke='#fff'/>
+<g transform="translate(25, 25)"><svg x="0" y="0">
+<mask id="rect-mask">
+    <rect x="0" y="0" width="200" height="8" fill="white" rx="5"/>
+</mask>
+    <rect
+                    mask="url(#rect-mask)"
+                    x="0"
+                    y="0"
+                    width="30"
+                    height="8"
+                    fill="#DEA584"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="30"
+                    y="0"
+                    width="26"
+                    height="8"
+                    fill="#b07219"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="56"
+                    y="0"
+                    width="22"
+                    height="8"
+                    fill="#F0DB4F"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="78"
+                    y="0"
+                    width="20"
+                    height="8"
+                    fill="#f34b7d"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="98"
+                    y="0"
+                    width="19"
+                    height="8"
+                    fill="#555555"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="117"
+                    y="0"
+                    width="16"
+                    height="8"
+                    fill="#A97BFF"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="133"
+                    y="0"
+                    width="15"
+                    height="8"
+                    fill="#306998"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="148"
+                    y="0"
+                    width="14"
+                    height="8"
+                    fill="#4F5D95"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="162"
+                    y="0"
+                    width="13"
+                    height="8"
+                    fill="#2b7489"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="175"
+                    y="0"
+                    width="12"
+                    height="8"
+                    fill="#c22d40"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="187"
+                    y="0"
+                    width="11"
+                    height="8"
+                    fill="#701516"
+                    class="lang-progress"
+                /></svg></g><g transform="translate(25, 50)"><g transform="translate(0, 0)"><g class="stagger" style="animation-delay: 225ms">
+                <circle cx="5" cy="6" r="5" fill="#DEA584" />
+                <text x="15" y="10" class='lang-name'>Rust 15.00%</text>
+            </g></g><g transform="translate(0, 25)"><g class="stagger" style="animation-delay: 300ms">
+                <circle cx="5" cy="6" r="5" fill="#b07219" />
+                <text x="15" y="10" class='lang-name'>Java 13.00%</text>
+            </g></g><g transform="translate(0, 50)"><g class="stagger" style="animation-delay: 375ms">
+                <circle cx="5" cy="6" r="5" fill="#F0DB4F" />
+                <text x="15" y="10" class='lang-name'>JavaScript 11.00%</text>
+            </g></g><g transform="translate(0, 75)"><g class="stagger" style="animation-delay: 450ms">
+                <circle cx="5" cy="6" r="5" fill="#f34b7d" />
+                <text x="15" y="10" class='lang-name'>C++ 10.00%</text>
+            </g></g><g transform="translate(0, 100)"><g class="stagger" style="animation-delay: 525ms">
+                <circle cx="5" cy="6" r="5" fill="#555555" />
+                <text x="15" y="10" class='lang-name'>C 9.00%</text>
+            </g></g><g transform="translate(0, 125)"><g class="stagger" style="animation-delay: 600ms">
+                <circle cx="5" cy="6" r="5" fill="#A97BFF" />
+                <text x="15" y="10" class='lang-name'>Kotlin 8.00%</text>
+            </g></g><g transform="translate(150, 0)"><g class="stagger" style="animation-delay: 675ms">
+                <circle cx="5" cy="6" r="5" fill="#306998" />
+                <text x="15" y="10" class='lang-name'>Python 7.00%</text>
+            </g></g><g transform="translate(150, 25)"><g class="stagger" style="animation-delay: 750ms">
+                <circle cx="5" cy="6" r="5" fill="#4F5D95" />
+                <text x="15" y="10" class='lang-name'>PHP 7.00%</text>
+            </g></g><g transform="translate(150, 50)"><g class="stagger" style="animation-delay: 825ms">
+                <circle cx="5" cy="6" r="5" fill="#2b7489" />
+                <text x="15" y="10" class='lang-name'>TypeScript 7.00%</text>
+            </g></g><g transform="translate(150, 75)"><g class="stagger" style="animation-delay: 900ms">
+                <circle cx="5" cy="6" r="5" fill="#c22d40" />
+                <text x="15" y="10" class='lang-name'>Scala 6.00%</text>
+            </g></g><g transform="translate(150, 100)"><g class="stagger" style="animation-delay: 975ms">
+                <circle cx="5" cy="6" r="5" fill="#701516" />
+                <text x="15" y="10" class='lang-name'>Ruby 6.00%</text>
+            </g></g></g>
 </svg>

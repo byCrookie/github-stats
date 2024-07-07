@@ -13,6 +13,7 @@ use mime;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
+    collections::HashMap,
     fs,
     io::{self, Error, Read, Write},
     path::Path,
@@ -22,8 +23,8 @@ use std::{
 mod github;
 mod icons;
 mod stats;
-mod toplangs;
 mod themes;
+mod toplangs;
 
 const ONE_DAY: u32 = 86400;
 const STATS_CACHE_SVG: &str = "stats_cache.svg";
@@ -124,7 +125,15 @@ async fn stats_endpoint(config: Data<Config>) -> impl Responder {
         if let Ok(mut file) = file {
             let stats_card =
                 crate::stats::render_stats_card(stats.total_stars, stats.total_commits, "Stats");
-            let write = file.write_all(stats_card.as_bytes());
+            let top_langs_card = crate::toplangs::render_top_languages(HashMap::new());
+            let svg_start = format!("<svg width='{}' height='{}' viewBox='0 0 {} {}' xmlns='http://www.w3.org/2000/svg'>",
+                300,
+                stats_card.0 as f64 + top_langs_card.0,
+                300,
+                stats_card.0 as f64 + top_langs_card.0
+            );
+            let card = format!("{}{}{}</svg>", svg_start, stats_card.1, top_langs_card.1);
+            let write = file.write_all(card.as_bytes());
             if let Err(err) = write {
                 debug!("can not write to {}: {}", cache_file_path.display(), err);
                 return HttpResponse::InternalServerError().finish();
@@ -140,7 +149,7 @@ async fn stats_endpoint(config: Data<Config>) -> impl Responder {
                         Some(format!("{ONE_DAY}")),
                     ),
                 ]))
-                .body(stats_card);
+                .body(card);
         }
     }
 
@@ -157,6 +166,7 @@ async fn main() -> Result<(), Error> {
         Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err.to_string())),
     };
 
+    crate::stats::test();
     crate::toplangs::test();
 
     HttpServer::new(move || {

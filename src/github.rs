@@ -85,7 +85,10 @@ async fn make_github_request(
                         if rate_limit == 0 {
                             debug!("Primary rate limit exceeded. Rate limit remaining is zero");
                             if let Some(retry_after) = ratelimit_reset(&headers) {
-                                debug!("Primary rate limit exceeded, sleeping for {} seconds", retry_after);
+                                debug!(
+                                    "Primary rate limit exceeded, sleeping for {} seconds",
+                                    retry_after
+                                );
                                 sleep(Duration::from_secs(retry_after)).await;
                                 continue;
                             }
@@ -94,7 +97,10 @@ async fn make_github_request(
                 }
 
                 if let Some(retry_after) = retry_after(&headers) {
-                    debug!("Secondary rate limit exceeded, sleeping for {} seconds", retry_after);
+                    debug!(
+                        "Secondary rate limit exceeded, sleeping for {} seconds",
+                        retry_after
+                    );
                     sleep(Duration::from_secs(retry_after)).await;
                     continue;
                 }
@@ -107,7 +113,6 @@ async fn make_github_request(
                     reqwest::StatusCode::SERVICE_UNAVAILABLE,
                     reqwest::StatusCode::GATEWAY_TIMEOUT,
                 ];
-
 
                 if resp.status().is_success() {
                     return Ok(resp);
@@ -306,10 +311,10 @@ impl Stats {
 
 pub async fn request_stats(github_user: &str, github_token: &str) -> Result<Stats, anyhow::Error> {
     match Stats::request(github_user, github_token).await {
-        Ok(stats) => {return Ok(stats)},
+        Ok(stats) => return Ok(stats),
         Err(err) => {
             error!("{err}");
-            return Err(err)
+            return Err(err);
         }
     }
 }

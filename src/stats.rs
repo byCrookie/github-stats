@@ -1,7 +1,11 @@
+use actix_web::web::ReqData;
+use log::debug;
+
 use crate::{
     icons::{icon_commits, icon_star},
     themes::Theme,
 };
+use std::io::Write;
 
 fn format_number(num: u32) -> String {
     if num < 1000 {
@@ -13,17 +17,18 @@ fn format_number(num: u32) -> String {
     }
 }
 
-pub fn render_stats_card(total_stars: u32, total_commits: u32, title: &str) -> String {
+pub fn render_stats_card(total_stars: u32, total_commits: u32, title: &str) -> (u64, String) {
     let stars_text_node = create_text_node(&icon_star(), "Total Stars", total_stars, 0);
     let commits_text_node = create_text_node(&icon_commits(), "Total Commits", total_commits, 1);
     let nodes: u64 = 2;
-    let width: u64 = 250;
+    let width: u64 = 300;
     let height: u64 = nodes * 41 + 28;
     let theme: Theme = crate::themes::dark();
     let title_color = theme.title_color;
     let text_color = theme.text_color;
     let icon_color = theme.icon_color;
     let bg_color = theme.background_color;
+    let border_color = theme.border_color;
 
     let css_styles = format!(
         r#"
@@ -59,7 +64,7 @@ pub fn render_stats_card(total_stars: u32, total_commits: u32, title: &str) -> S
     <style>
         {css_styles}
     </style>
-    <rect x='0' y='0' width='{width}' height='{height}' rx='4.5' fill='{bg_color}' stroke='{title_color}'/>
+    <rect x='0' y='0' width='{width}' height='{height}' rx='4.5' fill='{bg_color}' stroke='{border_color}'/>
     <text x='25' y='30' class='title'>{title}</text>
     <g transform='translate(25, 50)'>
         {stars_text_node}
@@ -69,7 +74,7 @@ pub fn render_stats_card(total_stars: u32, total_commits: u32, title: &str) -> S
     "#
     );
 
-    svg
+    (height, svg)
 }
 
 fn create_text_node(icon: &str, label: &str, value: u32, index: usize) -> String {
@@ -87,4 +92,11 @@ fn create_text_node(icon: &str, label: &str, value: u32, index: usize) -> String
 </g>
     "#
     )
+}
+
+pub fn test() {
+    let svg = render_stats_card(34, 1234, "Stats");
+    debug!("{}", svg.1);
+    let mut file = std::fs::File::create("stats.svg").unwrap();
+    write!(&mut file, "{}", svg.1).unwrap();
 }

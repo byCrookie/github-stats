@@ -6,7 +6,7 @@
     font: 600 18px 'Segoe UI', Ubuntu, 'Helvetica Neue', Sans-Serif; fill: #fff;
 }
 .stat {
-    font: 600 14px 'Segoe UI', Ubuntu, 'Helvetica Neue', Sans-Serif; fill: #79ff97;
+    font: 600 14px 'Segoe UI', Ubuntu, 'Helvetica Neue', Sans-Serif; fill: #9f9f9f;
 }
 @supports(-moz-appearance: auto) {
     /* Selector detects Firefox */
@@ -17,7 +17,7 @@
     animation: fadeInAnimation 0.3s ease-in-out forwards;
 }
 .icon {
-    fill: #9f9f9f;
+    fill: #79ff97;
     display: block;
 }
 @keyframes fadeInAnimation {

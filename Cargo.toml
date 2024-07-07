@@ -6,7 +6,6 @@ edition = "2021"
 [dependencies]
 actix-web = "4"
 anyhow = "1.0.86"
-clap = { version = "4.5.8", features = ["derive"] }
 config = "0.14.0"
 dotenv = "0.15.0"
 env_logger = "0.11.3"

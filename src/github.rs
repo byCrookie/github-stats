@@ -1,5 +1,5 @@
 use anyhow::anyhow;
-use log::debug;
+use log::{debug, error};
 use reqwest::header::{
     HeaderMap, HeaderName, HeaderValue, ACCEPT, AUTHORIZATION, LINK, USER_AGENT,
 };
@@ -14,24 +14,24 @@ const MAX_RETRIES: u32 = 2;
 const INITIAL_BACKOFF: u64 = 2;
 
 #[derive(Debug)]
-struct Stats {
-    total_stars: usize,
-    total_commits: usize,
+pub struct Stats {
+    pub total_stars: u32,
+    pub total_commits: u32,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Repository {
-    id: u64,
+    id: u32,
     name: String,
     full_name: String,
     owner: Owner,
-    stargazers_count: usize,
+    stargazers_count: u32,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 struct Owner {
     login: String,
-    id: u64,
+    id: u32,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -57,12 +57,12 @@ struct CommitAuthor {
 struct Language {
     name: String,
     color: String,
-    size: u64,
+    size: u32,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
 struct SearchResult<T> {
-    total_count: usize,
+    total_count: u32,
     incomplete_results: bool,
     items: Vec<T>,
 }
@@ -299,12 +299,17 @@ impl Stats {
             total_commits,
         };
 
+        debug!("{:#?}", stats);
         return Ok(stats);
     }
 }
 
-pub async fn test(github_user: &str, github_token: &str) -> Result<(), anyhow::Error> {
-    let stats = Stats::request(github_user, github_token).await?;
-    debug!("{:#?}", stats);
-    Ok(())
+pub async fn request_stats(github_user: &str, github_token: &str) -> Result<Stats, anyhow::Error> {
+    match Stats::request(github_user, github_token).await {
+        Ok(stats) => {return Ok(stats)},
+        Err(err) => {
+            error!("{err}");
+            return Err(err)
+        }
+    }
 }

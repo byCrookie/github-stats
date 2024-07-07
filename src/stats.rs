@@ -1,3 +1,5 @@
+use log::debug;
+
 use crate::icons::{icon_commits, icon_star};
 
 fn render_stats_card(total_stars: u32, total_commits: u32, title: &str) -> String {
@@ -79,5 +81,5 @@ pub fn test() {
     let title = "GitHub Stats";
 
     let svg = render_stats_card(total_stars, total_commits, title);
-    println!("{:#?}", svg);
+    debug!("{:#?}", svg);
 }

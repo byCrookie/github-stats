@@ -2,6 +2,7 @@ use actix_web::{get, http::header, web::Data, App, HttpResponse, HttpServer, Res
 use clap::Parser;
 use config::{ConfigError, Environment, File};
 use dotenv::dotenv;
+use env_logger::Env;
 use mime;
 use serde::{Deserialize, Serialize};
 use std::{
@@ -38,7 +39,6 @@ struct Args {
 
 impl Config {
     pub fn from_env() -> Result<Self, ConfigError> {
-        dotenv().ok();
         let args = Args::parse();
         let mut cfg_builder = config::Config::builder();
         cfg_builder = cfg_builder.add_source(
@@ -105,6 +105,9 @@ async fn toplangs_endpoint() -> impl Responder {
 
 #[actix_web::main]
 async fn main() -> Result<(), Error> {
+    dotenv().ok();
+    env_logger::init_from_env(Env::default().default_filter_or("debug"));
+
     let config = match Config::from_env() {
         Ok(config) => config,
         Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err.to_string())),

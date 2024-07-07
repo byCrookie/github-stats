@@ -3,6 +3,8 @@ use std::f64::consts::PI;
 use std::fmt::Write;
 use std::mem;
 
+use log::debug;
+
 #[derive(Debug, Clone)]
 struct Lang {
     name: String,
@@ -420,5 +422,5 @@ pub fn test() {
     options.insert("hide_progress".to_string(), "false".to_string());
 
     let svg = render_top_languages(top_langs, options);
-    println!("{}", svg);
+    debug!("{}", svg);
 }

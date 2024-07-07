@@ -9,6 +9,8 @@ anyhow = "1.0.86"
 clap = { version = "4.5.8", features = ["derive"] }
 config = "0.14.0"
 dotenv = "0.15.0"
+env_logger = "0.11.3"
+log = "0.4.22"
 mime = "0.3.17"
 reqwest = { version = "0.12.5", features = ["json"] }
 serde = "1.0.203"

@@ -1,4 +1,5 @@
 use anyhow::{anyhow, Ok};
+use log::debug;
 use reqwest::header::{
     HeaderMap, HeaderName, HeaderValue, ACCEPT, AUTHORIZATION, LINK, USER_AGENT,
 };
@@ -58,33 +59,38 @@ async fn fetch_all_pages<T: DeserializeOwned>(
     client: &Client,
     initial_url: &str,
 ) -> Result<SearchResult<T>, anyhow::Error> {
+    debug!("Fetch all pages for {initial_url}");
+    let mut total_count = 0;
     let mut all_items = Vec::new();
     let mut next_url = Some(Url::parse(initial_url)?);
 
     while let Some(url) = next_url.take() {
-        println!("Call {}", url.as_str());
+        debug!("Call {}", url.as_str());
         let response = client.get(url.as_str()).send().await?;
         if response.status().is_success() {
             let headers = response.headers().clone();
-            println!("Headers {:?}", headers);
+            debug!("Headers {:?}", headers);
             let result: SearchResult<T> = response.json().await?;
 
             if result.incomplete_results {
                 return Err(anyhow!("Fetch was incomplete"));
             }
 
-            println!("Count {}", result.items.len());
+            debug!("Total Count {}", result.total_count);
+            debug!("Count {}", result.items.len());
+            if total_count <= result.total_count {
+                total_count = result.total_count;
+            }
             all_items.extend(result.items);
             next_url = parse_next_url(&headers)?;
-            println!("Next {:?}", next_url);
-            println!();
+            debug!("Next {:?}", next_url);
         } else {
             return Err(anyhow!("Failed to fetch data: {}", response.status()));
         }
     }
 
     Ok(SearchResult {
-        total_count: all_items.len(),
+        total_count: total_count,
         incomplete_results: false,
         items: all_items,
     })
@@ -94,7 +100,7 @@ fn parse_next_url(headers: &HeaderMap) -> Result<Option<Url>, anyhow::Error> {
     if let Some(link_header) = headers.get(LINK) {
         let link_str = link_header.to_str()?;
         let links = parse_link_header(link_str)?;
-        println!("Links {:?}", links);
+        debug!("Links {:?}", links);
         if let Some(next) = links.get("next") {
             return Ok(Some(next.clone()));
         }
@@ -163,17 +169,20 @@ impl Stats {
             .map(|repo| repo.stargazers_count)
             .sum();
 
-        let commit_result: SearchResult<Commit> = fetch_all_pages(
-            &client,
-            &format!("https://api.github.com/search/commits?q=author:{github_user}&per_page=100"),
-        )
-        .await?;
+        let commit_result: SearchResult<Commit> = client
+            .get(format!(
+                "https://api.github.com/search/commits?q=author:{github_user}"
+            ))
+            .send()
+            .await?
+            .json()
+            .await?;
 
         let total_commits = commit_result.total_count;
 
         let stats = Stats {
-            total_stars: total_stars,
-            total_commits: total_commits,
+            total_stars,
+            total_commits,
         };
 
         return Ok(stats);
@@ -182,6 +191,6 @@ impl Stats {
 
 pub async fn test(github_user: &str, github_token: &str) -> Result<(), anyhow::Error> {
     let stats = Stats::request(github_user, github_token).await?;
-    println!("{:#?}", stats);
+    debug!("{:#?}", stats);
     Ok(())
 }

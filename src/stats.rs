@@ -1,4 +1,7 @@
-use crate::icons::{icon_commits, icon_star};
+use crate::{
+    icons::{icon_commits, icon_star},
+    themes::Theme,
+};
 
 fn format_number(num: u32) -> String {
     if num < 1000 {
@@ -14,13 +17,13 @@ pub fn render_stats_card(total_stars: u32, total_commits: u32, title: &str) -> S
     let stars_text_node = create_text_node(&icon_star(), "Total Stars", total_stars, 0);
     let commits_text_node = create_text_node(&icon_commits(), "Total Commits", total_commits, 1);
     let nodes: u64 = 2;
-
-    let title_color = "#fff";
-    let text_color = "#9f9f9f";
-    let icon_color = "#79ff97";
-    let bg_color = "#151515";
     let width: u64 = 250;
     let height: u64 = nodes * 41 + 28;
+    let theme: Theme = crate::themes::dark();
+    let title_color = theme.title_color;
+    let text_color = theme.text_color;
+    let icon_color = theme.icon_color;
+    let bg_color = theme.background_color;
 
     let css_styles = format!(
         r#"

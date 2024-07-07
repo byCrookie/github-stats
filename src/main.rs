@@ -23,6 +23,7 @@ mod github;
 mod icons;
 mod stats;
 mod toplangs;
+mod themes;
 
 const ONE_DAY: u32 = 86400;
 const STATS_CACHE_SVG: &str = "stats_cache.svg";
@@ -155,6 +156,8 @@ async fn main() -> Result<(), Error> {
         Ok(config) => config,
         Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err.to_string())),
     };
+
+    crate::toplangs::test();
 
     HttpServer::new(move || {
         App::new()

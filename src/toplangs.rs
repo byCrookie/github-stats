@@ -1,3 +1,4 @@
+use crate::card::Part;
 use crate::themes::Theme;
 use log::debug;
 use std::collections::HashMap;
@@ -10,19 +11,17 @@ pub struct Lang {
     pub color: String,
 }
 
-fn calculate_height(total_langs: usize, gap: f64, columns: u64) -> f64 {
-    50.0 + total_langs as f64 * (gap / columns as f64) + 25.0
+fn calculate_height(langs: usize, gap: f64, columns: u64) -> f64 {
+    50.0 + langs as f64 * (gap / columns as f64) + 25.0
 }
 
-fn trim_top_languages(top_langs: HashMap<String, Lang>, langs_count: usize) -> (Vec<Lang>, f64) {
-    let mut langs: Vec<Lang> = top_langs.into_values().collect();
+fn select_top_languages(langs: HashMap<String, Lang>, langs_count: usize) -> (Vec<Lang>, f64) {
+    let mut langs: Vec<Lang> = langs.into_values().collect();
     let langs_count = langs_count.clamp(1, 20);
     langs.sort_by(|a, b| b.size.partial_cmp(&a.size).unwrap());
-
     let langs = langs.into_iter().take(langs_count).collect::<Vec<_>>();
-    let total_language_size = langs.iter().map(|lang| lang.size).sum();
-
-    (langs, total_language_size)
+    let total_languages_size = langs.iter().map(|lang| lang.size).sum();
+    (langs, total_languages_size)
 }
 
 fn flex_layout(items: Vec<String>, gap: f64, columns: u64) -> String {
@@ -56,26 +55,30 @@ fn flex_layout(items: Vec<String>, gap: f64, columns: u64) -> String {
     layout
 }
 
-fn render_percent_bar(langs: &Vec<Lang>, width: f64, total_language_size: f64) -> String {
-    let padding_right = 100.0;
-    let offset_width = width - padding_right;
-    let mut progress_offset = 0.0;
+fn render_percent_bar(
+    langs: &Vec<Lang>,
+    x_offset: f64,
+    width: f64,
+    total_language_size: f64,
+) -> String {
+    let width_without_offset: f64 = width - 2.0 * x_offset;
+    let mut progress_offset: f64 = 0.0;
 
     let progress_bar = langs
         .iter()
         .map(|lang| {
-            let percentage = ((lang.size / total_language_size) * offset_width).round();
+            let lang_color = &lang.color;
+            let percentage = ((lang.size / total_language_size) * width_without_offset).round();
             let output = format!(
                 r#"<rect
                     mask="url(#rect-mask)"
-                    x="{}"
+                    x="{progress_offset}"
                     y="0"
-                    width="{}"
+                    width="{percentage}"
                     height="8"
-                    fill="{}"
+                    fill="{lang_color}"
                     class="lang-progress"
-                />"#,
-                progress_offset, percentage, lang.color
+                />"#
             );
             progress_offset += percentage;
             output
@@ -86,12 +89,12 @@ fn render_percent_bar(langs: &Vec<Lang>, width: f64, total_language_size: f64) -
     let mask = format!(
         r#"
 <mask id="rect-mask">
-    <rect x="0" y="0" width="{offset_width}" height="8" fill="white" rx="5"/>
+    <rect width="{width_without_offset}px" height="8" fill="white" rx="5"/>
 </mask>
     "#
     );
 
-    format!(r#"<svg x="0" y="0">{}{}</svg>"#, mask, progress_bar)
+    format!(r#"<svg width="{width_without_offset}px">{mask}{progress_bar}</svg>"#)
 }
 
 fn render_normal_layout(
@@ -121,29 +124,39 @@ fn render_normal_layout(
     flex_layout(items, gap, columns)
 }
 
-pub fn render_top_languages(top_langs: HashMap<String, Lang>) -> (f64, String) {
-    let theme: Theme = crate::themes::dark();
-    let text_color = theme.text_color;
-    let background_color = theme.background_color;
-    let title_color = theme.title_color;
+pub fn render_top_languages(
+    theme: &Theme,
+    x_offset: f64,
+    width: f64,
+    langs: HashMap<String, Lang>,
+    lang_count: usize,
+) -> Part {
+    let text_color = &theme.text_color;
+    let title_color = &theme.title_color;
+    let (langs, total_language_size) = select_top_languages(langs, lang_count);
 
-    let langs_count = 25; // Adjust as necessary
-    let (langs, total_language_size) = trim_top_languages(top_langs, langs_count);
+    if langs.len() == 0 {
+        return Part {
+            height: 0.0,
+            content: String::new()
+        }
+    }
+
     let columns: u64 = if langs.len() > 4 { 2 } else { 1 };
+    let width: f64 = if langs.len() > 4 { width } else { width / 2.0 };
     let gap = 25.0;
-    let width = 300.0; // Default card width
     let height = calculate_height(langs.len(), gap, columns);
 
     let mut svg = String::new();
     svg.push_str(&format!(
-        r#"<svg width="{width}" height="{height}" viewBox="0 0 {width} {height}" xmlns="http://www.w3.org/2000/svg">
+        r#"<svg xmlns="http://www.w3.org/2000/svg">
             <style>
                 .title {{
                     font: 600 18px 'Segoe UI', Ubuntu, 'Helvetica Neue', Sans-Serif; fill: {title_color};
                 }}
                 @keyframes slideInAnimation {{
                     from {{ width: 0; }}
-                    to {{ width: calc(100% - 100px); }}
+                    to {{ width: 100%; }}
                 }}
                 @keyframes growWidthAnimation {{
                     from {{ width: 0; }}
@@ -178,17 +191,23 @@ pub fn render_top_languages(top_langs: HashMap<String, Lang>) -> (f64, String) {
             </style>"#
     ));
 
-    svg.push_str(&format!("<rect x='0' y='0' width='{width}' height='{height}' rx='4.5' fill='{background_color}' stroke='{title_color}'/>\n"));
-    svg.push_str(&format!(
-        r#"<g transform="translate(25, 25)">{}</g>"#,
-        render_percent_bar(&langs, width, total_language_size)
+    svg.push_str(&render_percent_bar(
+        &langs,
+        x_offset,
+        width,
+        total_language_size,
     ));
     svg.push_str(&format!(
-        r#"<g transform="translate(25, 50)">{}</g>"#,
+        r#"<g transform="translate(0, {})">{}</g>"#,
+        gap,
         render_normal_layout(langs, total_language_size, gap, columns)
     ));
     svg.push_str("\n</svg>");
-    (height, svg)
+
+    return Part {
+        height,
+        content: svg,
+    };
 }
 
 pub fn test() {
@@ -362,8 +381,10 @@ pub fn test() {
         },
     );
 
-    let svg = render_top_languages(top_langs);
-    debug!("{}", svg.1);
-    let mut file = std::fs::File::create("top_langs.svg").unwrap();
-    write!(&mut file, "{}", svg.1).unwrap();
+    let theme: Theme = crate::themes::dark();
+    let x_offset: f64 = 25.0;
+    let width: f64 = 300.0;
+    let part = render_top_languages(&theme, x_offset, width, top_langs, 20);
+    let mut file = std::fs::File::create("toplangs.svg").unwrap();
+    write!(&mut file, "{}", part.content).unwrap();
 }

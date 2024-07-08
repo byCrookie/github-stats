@@ -19,7 +19,9 @@ use std::{
     path::Path,
     time::{Duration, SystemTime},
 };
+use themes::Theme;
 
+mod card;
 mod github;
 mod icons;
 mod stats;
@@ -27,7 +29,7 @@ mod themes;
 mod toplangs;
 
 const ONE_DAY: u32 = 86400;
-const STATS_CACHE_SVG: &str = "stats_cache.svg";
+const ALL_CACHE_SVG: &str = "all_cache.svg";
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
 struct Config {
@@ -80,21 +82,21 @@ fn read_file_if_recent(path: &Path, seconds: u32) -> Result<Option<String>, anyh
 
 #[derive(Serialize)]
 struct Endpoints {
-    stats_url: String,
+    all_url: String,
 }
 
 #[get("/")]
 async fn root_endpoint(config: Data<Config>) -> impl Responder {
     let endpoints = Endpoints {
-        stats_url: format!("{}/stats", config.base_url),
+        all_url: format!("{}/all", config.base_url),
     };
 
     HttpResponse::Ok().body(format!("{}", json!(endpoints)))
 }
 
-#[get("/stats")]
-async fn stats_endpoint(config: Data<Config>) -> impl Responder {
-    let cache_file_path = Path::join(Path::new(&config.cache_path), STATS_CACHE_SVG);
+#[get("/all")]
+async fn all_endpoint(config: Data<Config>) -> impl Responder {
+    let cache_file_path = Path::join(Path::new(&config.cache_path), ALL_CACHE_SVG);
     let file_result = read_file_if_recent(&cache_file_path, config.cache_seconds);
 
     if let Ok(file) = file_result {
@@ -123,17 +125,28 @@ async fn stats_endpoint(config: Data<Config>) -> impl Responder {
         }
 
         if let Ok(mut file) = file {
-            let stats_card =
-                crate::stats::render_stats_card(stats.total_stars, stats.total_commits, "Stats");
-            let top_langs_card = crate::toplangs::render_top_languages(HashMap::new());
-            let svg_start = format!("<svg width='{}' height='{}' viewBox='0 0 {} {}' xmlns='http://www.w3.org/2000/svg'>",
-                300,
-                stats_card.0 as f64 + top_langs_card.0,
-                300,
-                stats_card.0 as f64 + top_langs_card.0
+            let width: f64 = 300.0;
+            let x_offset: f64 = 25.0;
+            let y_offset: f64 = 35.0;
+            let gap: f64 = 20.0;
+            let langs: HashMap<String, toplangs::Lang> = HashMap::new();
+            let lang_count: usize = 20;
+            let title: &str = "Stats";
+            let theme: Theme = crate::themes::dark();
+            let rendered_stats =
+                crate::stats::render_stats(&theme, stats.total_stars, stats.total_commits);
+            let rendered_toplangs =
+                crate::toplangs::render_top_languages(&theme, x_offset, width, langs, lang_count);
+            let rendered_card = crate::card::render_card(
+                vec![rendered_stats, rendered_toplangs],
+                x_offset,
+                y_offset,
+                gap,
+                width,
+                title,
             );
-            let card = format!("{}{}{}</svg>", svg_start, stats_card.1, top_langs_card.1);
-            let write = file.write_all(card.as_bytes());
+
+            let write = file.write_all(rendered_card.as_bytes());
             if let Err(err) = write {
                 debug!("can not write to {}: {}", cache_file_path.display(), err);
                 return HttpResponse::InternalServerError().finish();
@@ -149,7 +162,7 @@ async fn stats_endpoint(config: Data<Config>) -> impl Responder {
                         Some(format!("{ONE_DAY}")),
                     ),
                 ]))
-                .body(card);
+                .body(rendered_card);
         }
     }
 
@@ -168,13 +181,14 @@ async fn main() -> Result<(), Error> {
 
     crate::stats::test();
     crate::toplangs::test();
+    crate::card::test();
 
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
             .app_data(Data::new(config.clone()))
             .service(root_endpoint)
-            .service(stats_endpoint)
+            .service(all_endpoint)
     })
     .bind(("127.0.0.1", 8080))?
     .keep_alive(None)

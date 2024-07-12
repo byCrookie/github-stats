@@ -8,9 +8,8 @@ use actix_web::{
 };
 use config::{ConfigError, Environment};
 use dotenv::dotenv;
-use env_logger::Env;
+use env_logger::Target;
 use log::{debug, info, LevelFilter};
-use logger::write;
 use mime;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -26,7 +25,6 @@ mod card;
 mod github;
 mod icons;
 mod languagecolors;
-mod logger;
 mod stats;
 mod themes;
 mod toplangs;
@@ -186,7 +184,7 @@ async fn main() -> Result<(), Error> {
     env_logger::builder()
         .filter_level(LevelFilter::Info)
         .parse_default_env()
-        .format(write)
+        .target(Target::Stdout)
         .init();
 
     let config = match Config::from_env() {

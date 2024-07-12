@@ -1,3 +1,5 @@
+ARG STATS_PORT
+
 FROM rust:latest as builder
 
 WORKDIR /app
@@ -16,5 +18,7 @@ RUN strip target/x86_64-unknown-linux-musl/release/github-stats
 FROM alpine as runtime
 
 COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/github-stats /bin/github-stats
+
+EXPOSE $STATS_PORT
 
 CMD ["/bin/github-stats"]

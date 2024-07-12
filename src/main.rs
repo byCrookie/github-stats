@@ -10,11 +10,11 @@ use config::{ConfigError, Environment};
 use dotenv::dotenv;
 use env_logger::Env;
 use log::{debug, info, LevelFilter};
+use logger::write;
 use mime;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
 use std::{
-    collections::HashMap,
     fs,
     io::{self, Error, Read, Write},
     path::Path,
@@ -26,6 +26,7 @@ mod card;
 mod github;
 mod icons;
 mod languagecolors;
+mod logger;
 mod stats;
 mod themes;
 mod toplangs;
@@ -182,7 +183,11 @@ async fn all_endpoint(config: Data<Config>) -> impl Responder {
 #[actix_web::main]
 async fn main() -> Result<(), Error> {
     dotenv().ok();
-    env_logger::init_from_env(Env::default().default_filter_or("info"));
+    env_logger::builder()
+        .filter_level(LevelFilter::Info)
+        .parse_default_env()
+        .format(write)
+        .init();
 
     let config = match Config::from_env() {
         Ok(config) => config,

@@ -1,0 +1,10 @@
+services:
+  portfolio:
+    container_name: github-stats
+    build:
+      context: .
+      dockerfile: Dockerfile
+    env_file:
+      - .env
+    ports:
+      - 3001:8080

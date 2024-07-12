@@ -9,7 +9,7 @@ use actix_web::{
 use config::{ConfigError, Environment};
 use dotenv::dotenv;
 use env_logger::Env;
-use log::{debug, info};
+use log::{debug, info, LevelFilter};
 use mime;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -182,7 +182,14 @@ async fn all_endpoint(config: Data<Config>) -> impl Responder {
 #[actix_web::main]
 async fn main() -> Result<(), Error> {
     dotenv().ok();
-    env_logger::init_from_env(Env::default().default_filter_or("debug"));
+
+    // env_logger::builder()
+    // .format(|buf, record| {
+    //     writeln!(buf, "{}: {}", record.level(), record.args())
+    // })
+    // .filter_level(LevelFilter::Info)
+    // .parse_default_env()
+    // .init();
 
     let config = match Config::from_env() {
         Ok(config) => config,

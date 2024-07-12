@@ -182,14 +182,7 @@ async fn all_endpoint(config: Data<Config>) -> impl Responder {
 #[actix_web::main]
 async fn main() -> Result<(), Error> {
     dotenv().ok();
-
-    // env_logger::builder()
-    // .format(|buf, record| {
-    //     writeln!(buf, "{}: {}", record.level(), record.args())
-    // })
-    // .filter_level(LevelFilter::Info)
-    // .parse_default_env()
-    // .init();
+    env_logger::init_from_env(Env::default().default_filter_or("info"));
 
     let config = match Config::from_env() {
         Ok(config) => config,
@@ -223,6 +216,7 @@ async fn main() -> Result<(), Error> {
     .bind((address, port))?
     .keep_alive(None)
     .shutdown_timeout(0)
+    .workers(2)
     .run()
     .await
 }

@@ -217,8 +217,7 @@ async fn main() -> Result<(), Error> {
             .service(all_endpoint)
     })
     .bind((address, port))?
-    .keep_alive(None)
-    .shutdown_timeout(0)
+    .disable_signals()
     .workers(2)
     .run()
     .await

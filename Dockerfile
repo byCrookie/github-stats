@@ -18,6 +18,7 @@ ARG STATS_PORT
 
 COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/github-stats /bin/github-stats
 
-EXPOSE $STATS_PORT
+RUN echo ${STATS_PORT}
+EXPOSE ${STATS_PORT}
 
 CMD ["/bin/github-stats"]

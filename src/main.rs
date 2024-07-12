@@ -9,7 +9,7 @@ use actix_web::{
 use config::{ConfigError, Environment};
 use dotenv::dotenv;
 use env_logger::Env;
-use log::debug;
+use log::{debug, info};
 use mime;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -202,6 +202,8 @@ async fn main() -> Result<(), Error> {
         .burst_size(3)
         .finish()
         .unwrap();
+
+    info!("Running on {address}:{port}");
 
     HttpServer::new(move || {
         App::new()

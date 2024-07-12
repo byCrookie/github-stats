@@ -1,3 +1,4 @@
+use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web::{
     get,
     http::header::{self, CacheControl, CacheDirective},
@@ -196,9 +197,16 @@ async fn main() -> Result<(), Error> {
     let address: String = config.address.clone();
     let port: u16 = config.port.clone();
 
+    let governor_conf = GovernorConfigBuilder::default()
+        .per_second(5)
+        .burst_size(3)
+        .finish()
+        .unwrap();
+
     HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
+            .wrap(Governor::new(&governor_conf))
             .app_data(Data::new(config.clone()))
             .service(root_endpoint)
             .service(all_endpoint)

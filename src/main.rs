@@ -39,6 +39,8 @@ struct Config {
     github_token: String,
     base_url: String,
     cache_path: String,
+    address: String,
+    port: u16,
 }
 
 impl Config {
@@ -47,6 +49,8 @@ impl Config {
         cfg_builder = cfg_builder.set_default("cache_seconds", ONE_DAY)?;
         cfg_builder = cfg_builder.set_default("base_url", "")?;
         cfg_builder = cfg_builder.set_default("cache_path", "")?;
+        cfg_builder = cfg_builder.set_default("address", "0.0.0.0")?;
+        cfg_builder = cfg_builder.set_default("port", 8080)?;
 
         cfg_builder = cfg_builder.add_source(
             Environment::default()
@@ -184,10 +188,13 @@ async fn main() -> Result<(), Error> {
         Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err.to_string())),
     };
 
-    crate::card::test();
-    crate::stats::test();
-    crate::toplangs::test();
+    // crate::card::test();
+    // crate::stats::test();
+    // crate::toplangs::test();
     // crate::github::test(&config.github_user, &config.github_token).await;
+
+    let address: String = config.address.clone();
+    let port: u16 = config.port.clone();
 
     HttpServer::new(move || {
         App::new()
@@ -196,7 +203,7 @@ async fn main() -> Result<(), Error> {
             .service(root_endpoint)
             .service(all_endpoint)
     })
-    .bind(("127.0.0.1", 8080))?
+    .bind((address, port))?
     .keep_alive(None)
     .shutdown_timeout(0)
     .run()

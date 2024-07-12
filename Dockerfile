@@ -5,8 +5,11 @@ WORKDIR /app
 RUN apt-get update && apt-get install -y musl-tools
 RUN rustup target add x86_64-unknown-linux-musl
 
-COPY . .
+COPY Cargo.toml ./Cargo.toml
+COPY Cargo.lock ./Cargo.lock
+COPY src ./src
 
+RUN cargo add openssl --features vendored
 RUN cargo build --target x86_64-unknown-linux-musl --release
 
 RUN strip target/x86_64-unknown-linux-musl/release/github-stats

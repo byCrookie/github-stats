@@ -1,23 +1,19 @@
 use crate::card::Part;
+use crate::github::Language;
 use crate::themes::Theme;
-use log::debug;
 use std::collections::HashMap;
 use std::io::Write;
 
-#[derive(Debug, Clone)]
-pub struct Lang {
-    pub name: String,
-    pub size: f64,
-    pub color: String,
-}
-
 fn calculate_height(langs: usize, gap: f64, columns: u64) -> f64 {
-    50.0 + langs as f64 * (gap / columns as f64) + 25.0
+    langs as f64 * (gap / columns as f64)
 }
 
-fn select_top_languages(langs: HashMap<String, Lang>, langs_count: usize) -> (Vec<Lang>, f64) {
-    let mut langs: Vec<Lang> = langs.into_values().collect();
-    let langs_count = langs_count.clamp(1, 20);
+fn select_top_languages(
+    langs: HashMap<String, Language>,
+    langs_count: usize,
+) -> (Vec<Language>, f64) {
+    let mut langs: Vec<Language> = langs.into_values().collect();
+    let langs_count = langs_count.clamp(0, 100);
     langs.sort_by(|a, b| b.size.partial_cmp(&a.size).unwrap());
     let langs = langs.into_iter().take(langs_count).collect::<Vec<_>>();
     let total_languages_size = langs.iter().map(|lang| lang.size).sum();
@@ -56,7 +52,7 @@ fn flex_layout(items: Vec<String>, gap: f64, columns: u64) -> String {
 }
 
 fn render_percent_bar(
-    langs: &Vec<Lang>,
+    langs: &Vec<Language>,
     x_offset: f64,
     width: f64,
     total_language_size: f64,
@@ -98,7 +94,7 @@ fn render_percent_bar(
 }
 
 fn render_normal_layout(
-    langs: Vec<Lang>,
+    langs: Vec<Language>,
     total_language_size: f64,
     gap: f64,
     columns: u64,
@@ -106,7 +102,7 @@ fn render_normal_layout(
     let mut items = vec![];
 
     for (index, lang) in langs.iter().enumerate() {
-        let percent = (lang.size / total_language_size * 100.0).round();
+        let percent = lang.size / total_language_size * 100.0;
         let color = &lang.color;
         let name = &lang.name;
         items.push(format!(
@@ -128,7 +124,7 @@ pub fn render_top_languages(
     theme: &Theme,
     x_offset: f64,
     width: f64,
-    langs: HashMap<String, Lang>,
+    langs: HashMap<String, Language>,
     lang_count: usize,
 ) -> Part {
     let text_color = &theme.text_color;
@@ -138,8 +134,8 @@ pub fn render_top_languages(
     if langs.len() == 0 {
         return Part {
             height: 0.0,
-            content: String::new()
-        }
+            content: String::new(),
+        };
     }
 
     let columns: u64 = if langs.len() > 4 { 2 } else { 1 };
@@ -213,178 +209,191 @@ pub fn render_top_languages(
 pub fn test() {
     let mut top_langs = HashMap::new();
     top_langs.insert(
-        "Rust".to_string(),
-        Lang {
-            name: "Rust".to_string(),
-            size: 40.0,
-            color: "#DEA584".to_string(),
+        "Dockerfile".to_string(),
+        Language {
+            name: "Dockerfile".to_string(),
+            size: 11492.0,
+            color: "#384d54".to_string(),
         },
     );
     top_langs.insert(
-        "JavaScript".to_string(),
-        Lang {
-            name: "JavaScript".to_string(),
-            size: 30.0,
-            color: "#F0DB4F".to_string(),
+        "Jupyter Notebook".to_string(),
+        Language {
+            name: "Jupyter Notebook".to_string(),
+            size: 1246588.0,
+            color: "#DA5B0B".to_string(),
         },
     );
     top_langs.insert(
-        "Python".to_string(),
-        Lang {
-            name: "Python".to_string(),
-            size: 20.0,
-            color: "#306998".to_string(),
+        "Vue".to_string(),
+        Language {
+            name: "Vue".to_string(),
+            size: 165370.0,
+            color: "#41b883".to_string(),
         },
     );
     top_langs.insert(
-        "Go".to_string(),
-        Lang {
-            name: "Go".to_string(),
-            size: 10.0,
-            color: "#00ADD8".to_string(),
+        "HTML".to_string(),
+        Language {
+            name: "HTML".to_string(),
+            size: 1879495.0,
+            color: "#e34c26".to_string(),
         },
     );
     top_langs.insert(
         "Java".to_string(),
-        Lang {
+        Language {
             name: "Java".to_string(),
-            size: 35.0,
+            size: 1117778.0,
             color: "#b07219".to_string(),
         },
     );
     top_langs.insert(
-        "C".to_string(),
-        Lang {
-            name: "C".to_string(),
-            size: 25.0,
-            color: "#555555".to_string(),
+        "Shell".to_string(),
+        Language {
+            name: "Shell".to_string(),
+            size: 18528.0,
+            color: "#89e051".to_string(),
         },
     );
     top_langs.insert(
-        "C++".to_string(),
-        Lang {
-            name: "C++".to_string(),
-            size: 27.0,
-            color: "#f34b7d".to_string(),
+        "CMake".to_string(),
+        Language {
+            name: "CMake".to_string(),
+            size: 1177.0,
+            color: "#DA3434".to_string(),
         },
     );
     top_langs.insert(
-        "TypeScript".to_string(),
-        Lang {
-            name: "TypeScript".to_string(),
-            size: 18.0,
-            color: "#2b7489".to_string(),
+        "JavaScript".to_string(),
+        Language {
+            name: "JavaScript".to_string(),
+            size: 350724.0,
+            color: "#f1e05a".to_string(),
         },
     );
     top_langs.insert(
-        "Ruby".to_string(),
-        Lang {
-            name: "Ruby".to_string(),
-            size: 15.0,
-            color: "#701516".to_string(),
+        "Rust".to_string(),
+        Language {
+            name: "Rust".to_string(),
+            size: 54467.0,
+            color: "#dea584".to_string(),
         },
     );
     top_langs.insert(
-        "Swift".to_string(),
-        Lang {
-            name: "Swift".to_string(),
-            size: 12.0,
-            color: "#ffac45".to_string(),
+        "SCSS".to_string(),
+        Language {
+            name: "SCSS".to_string(),
+            size: 7550.0,
+            color: "#c6538c".to_string(),
         },
     );
     top_langs.insert(
-        "Kotlin".to_string(),
-        Lang {
-            name: "Kotlin".to_string(),
-            size: 22.0,
-            color: "#A97BFF".to_string(),
+        "Svelte".to_string(),
+        Language {
+            name: "Svelte".to_string(),
+            size: 1303.0,
+            color: "#ff3e00".to_string(),
+        },
+    );
+    top_langs.insert(
+        "CSS".to_string(),
+        Language {
+            name: "CSS".to_string(),
+            size: 76630.0,
+            color: "#563d7c".to_string(),
+        },
+    );
+    top_langs.insert(
+        "C#".to_string(),
+        Language {
+            name: "C#".to_string(),
+            size: 3190695.0,
+            color: "#178600".to_string(),
+        },
+    );
+    top_langs.insert(
+        "Astro".to_string(),
+        Language {
+            name: "Astro".to_string(),
+            size: 18638.0,
+            color: "#ff5a03".to_string(),
         },
     );
     top_langs.insert(
         "PHP".to_string(),
-        Lang {
+        Language {
             name: "PHP".to_string(),
-            size: 19.0,
+            size: 124099.0,
             color: "#4F5D95".to_string(),
         },
     );
     top_langs.insert(
-        "Perl".to_string(),
-        Lang {
-            name: "Perl".to_string(),
-            size: 14.0,
-            color: "#0298c3".to_string(),
+        "PLpgSQL".to_string(),
+        Language {
+            name: "PLpgSQL".to_string(),
+            size: 4217.0,
+            color: "#336790".to_string(),
         },
     );
     top_langs.insert(
-        "Scala".to_string(),
-        Lang {
-            name: "Scala".to_string(),
-            size: 16.0,
-            color: "#c22d40".to_string(),
+        "TypeScript".to_string(),
+        Language {
+            name: "TypeScript".to_string(),
+            size: 464381.0,
+            color: "#3178c6".to_string(),
         },
     );
     top_langs.insert(
-        "Haskell".to_string(),
-        Lang {
-            name: "Haskell".to_string(),
-            size: 13.0,
-            color: "#5e5086".to_string(),
+        "Makefile".to_string(),
+        Language {
+            name: "Makefile".to_string(),
+            size: 20847.0,
+            color: "#427819".to_string(),
         },
     );
     top_langs.insert(
-        "Elixir".to_string(),
-        Lang {
-            name: "Elixir".to_string(),
-            size: 11.0,
-            color: "#6e4a7e".to_string(),
+        "C".to_string(),
+        Language {
+            name: "C".to_string(),
+            size: 344871.0,
+            color: "#555555".to_string(),
         },
     );
     top_langs.insert(
-        "Clojure".to_string(),
-        Lang {
-            name: "Clojure".to_string(),
-            size: 9.0,
-            color: "#db5855".to_string(),
+        "PowerShell".to_string(),
+        Language {
+            name: "PowerShell".to_string(),
+            size: 9618.0,
+            color: "#012456".to_string(),
         },
     );
     top_langs.insert(
-        "Lua".to_string(),
-        Lang {
-            name: "Lua".to_string(),
-            size: 8.0,
-            color: "#000080".to_string(),
+        "Batchfile".to_string(),
+        Language {
+            name: "Batchfile".to_string(),
+            size: 6331.0,
+            color: "#C1F12E".to_string(),
         },
     );
     top_langs.insert(
-        "Dart".to_string(),
-        Lang {
-            name: "Dart".to_string(),
-            size: 7.0,
-            color: "#00B4AB".to_string(),
-        },
-    );
-    top_langs.insert(
-        "R".to_string(),
-        Lang {
-            name: "R".to_string(),
-            size: 5.0,
-            color: "#198CE7".to_string(),
-        },
-    );
-    top_langs.insert(
-        "MATLAB".to_string(),
-        Lang {
-            name: "MATLAB".to_string(),
-            size: 6.0,
-            color: "#e16737".to_string(),
+        "Python".to_string(),
+        Language {
+            name: "Python".to_string(),
+            size: 598997.0,
+            color: "#3572A5".to_string(),
         },
     );
 
     let theme: Theme = crate::themes::dark();
     let x_offset: f64 = 25.0;
+    let y_offset: f64 = 35.0;
+    let gap: f64 = 20.0;
+    let title: &str = "Top Languages";
     let width: f64 = 300.0;
-    let part = render_top_languages(&theme, x_offset, width, top_langs, 20);
+    let part = render_top_languages(&theme, x_offset, width, top_langs, 40);
+    let rendered_card = crate::card::render_card(vec![part], x_offset, y_offset, gap, width, title);
+
     let mut file = std::fs::File::create("toplangs.svg").unwrap();
-    write!(&mut file, "{}", part.content).unwrap();
+    write!(&mut file, "{}", rendered_card).unwrap();
 }

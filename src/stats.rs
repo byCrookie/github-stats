@@ -86,7 +86,14 @@ fn create_text_node(icon: &str, label: &str, value: u32, index: u64) -> String {
 
 pub fn test() {
     let theme: Theme = crate::themes::dark();
+    let x_offset: f64 = 25.0;
+    let y_offset: f64 = 35.0;
+    let gap: f64 = 20.0;
+    let title: &str = "Stats";
+    let width: f64 = 300.0;
     let part = render_stats(&theme, 34, 1234);
+    let rendered_card = crate::card::render_card(vec![part], x_offset, y_offset, gap, width, title);
+
     let mut file = std::fs::File::create("stats.svg").unwrap();
-    write!(&mut file, "{}", part.content).unwrap();
+    write!(&mut file, "{}", rendered_card).unwrap();
 }

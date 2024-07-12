@@ -1,6 +1,6 @@
 
-<svg width='300' height='343' viewBox='0 0 300 343' xmlns='http://www.w3.org/2000/svg'>
-    <rect x='0' y='0' width='300' height='343' rx='4.5' fill='#151515' stroke='#fff'/>
+<svg width='300' height='360.5' viewBox='0 0 300 360.5' xmlns='http://www.w3.org/2000/svg'>
+    <rect x='0' y='0' width='300' height='360.5' rx='4.5' fill='#151515' stroke='#fff'/>
     <g transform='translate(25, 35)'>
         <text style="font: 600 18px 'Segoe UI', Ubuntu, 'Helvetica Neue', Sans-Serif; fill: #fff;">Stats</text>
         

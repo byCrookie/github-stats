@@ -1,4 +1,11 @@
-<svg xmlns="http://www.w3.org/2000/svg">
+
+<svg width='300' height='365.5' viewBox='0 0 300 365.5' xmlns='http://www.w3.org/2000/svg'>
+    <rect x='0' y='0' width='300' height='365.5' rx='4.5' fill='#151515' stroke='#fff'/>
+    <g transform='translate(25, 35)'>
+        <text style="font: 600 18px 'Segoe UI', Ubuntu, 'Helvetica Neue', Sans-Serif; fill: #fff;">Top Languages</text>
+        
+<g transform='translate(0, 18)'>
+    <svg xmlns="http://www.w3.org/2000/svg">
             <style>
                 .title {
                     font: 600 18px 'Segoe UI', Ubuntu, 'Helvetica Neue', Sans-Serif; fill: #fff;
@@ -45,221 +52,248 @@
                     mask="url(#rect-mask)"
                     x="0"
                     y="0"
-                    width="28"
+                    width="82"
                     height="8"
-                    fill="#DEA584"
+                    fill="#178600"
                     class="lang-progress"
                 /><rect
                     mask="url(#rect-mask)"
-                    x="28"
+                    x="82"
                     y="0"
-                    width="25"
+                    width="48"
+                    height="8"
+                    fill="#e34c26"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="130"
+                    y="0"
+                    width="32"
+                    height="8"
+                    fill="#DA5B0B"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="162"
+                    y="0"
+                    width="29"
                     height="8"
                     fill="#b07219"
                     class="lang-progress"
                 /><rect
                     mask="url(#rect-mask)"
-                    x="53"
+                    x="191"
                     y="0"
-                    width="21"
+                    width="15"
                     height="8"
-                    fill="#F0DB4F"
+                    fill="#3572A5"
                     class="lang-progress"
                 /><rect
                     mask="url(#rect-mask)"
-                    x="74"
+                    x="206"
                     y="0"
-                    width="19"
+                    width="12"
                     height="8"
-                    fill="#f34b7d"
+                    fill="#3178c6"
                     class="lang-progress"
                 /><rect
                     mask="url(#rect-mask)"
-                    x="93"
+                    x="218"
                     y="0"
-                    width="18"
+                    width="9"
+                    height="8"
+                    fill="#f1e05a"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="227"
+                    y="0"
+                    width="9"
                     height="8"
                     fill="#555555"
                     class="lang-progress"
                 /><rect
                     mask="url(#rect-mask)"
-                    x="111"
+                    x="236"
                     y="0"
-                    width="15"
+                    width="4"
                     height="8"
-                    fill="#A97BFF"
+                    fill="#41b883"
                     class="lang-progress"
                 /><rect
                     mask="url(#rect-mask)"
-                    x="126"
+                    x="240"
                     y="0"
-                    width="14"
-                    height="8"
-                    fill="#306998"
-                    class="lang-progress"
-                /><rect
-                    mask="url(#rect-mask)"
-                    x="140"
-                    y="0"
-                    width="13"
+                    width="3"
                     height="8"
                     fill="#4F5D95"
                     class="lang-progress"
                 /><rect
                     mask="url(#rect-mask)"
-                    x="153"
+                    x="243"
                     y="0"
-                    width="13"
+                    width="2"
                     height="8"
-                    fill="#2b7489"
+                    fill="#563d7c"
                     class="lang-progress"
                 /><rect
                     mask="url(#rect-mask)"
-                    x="166"
+                    x="245"
                     y="0"
-                    width="11"
+                    width="1"
                     height="8"
-                    fill="#c22d40"
+                    fill="#dea584"
                     class="lang-progress"
                 /><rect
                     mask="url(#rect-mask)"
-                    x="177"
+                    x="246"
                     y="0"
-                    width="11"
+                    width="1"
                     height="8"
-                    fill="#701516"
-                    class="lang-progress"
-                /><rect
-                    mask="url(#rect-mask)"
-                    x="188"
-                    y="0"
-                    width="10"
-                    height="8"
-                    fill="#0298c3"
-                    class="lang-progress"
-                /><rect
-                    mask="url(#rect-mask)"
-                    x="198"
-                    y="0"
-                    width="9"
-                    height="8"
-                    fill="#5e5086"
-                    class="lang-progress"
-                /><rect
-                    mask="url(#rect-mask)"
-                    x="207"
-                    y="0"
-                    width="8"
-                    height="8"
-                    fill="#ffac45"
-                    class="lang-progress"
-                /><rect
-                    mask="url(#rect-mask)"
-                    x="215"
-                    y="0"
-                    width="8"
-                    height="8"
-                    fill="#6e4a7e"
-                    class="lang-progress"
-                /><rect
-                    mask="url(#rect-mask)"
-                    x="223"
-                    y="0"
-                    width="7"
-                    height="8"
-                    fill="#00ADD8"
-                    class="lang-progress"
-                /><rect
-                    mask="url(#rect-mask)"
-                    x="230"
-                    y="0"
-                    width="6"
-                    height="8"
-                    fill="#db5855"
-                    class="lang-progress"
-                /><rect
-                    mask="url(#rect-mask)"
-                    x="236"
-                    y="0"
-                    width="6"
-                    height="8"
-                    fill="#000080"
-                    class="lang-progress"
-                /><rect
-                    mask="url(#rect-mask)"
-                    x="242"
-                    y="0"
-                    width="5"
-                    height="8"
-                    fill="#00B4AB"
+                    fill="#427819"
                     class="lang-progress"
                 /><rect
                     mask="url(#rect-mask)"
                     x="247"
                     y="0"
-                    width="4"
+                    width="0"
                     height="8"
-                    fill="#e16737"
+                    fill="#ff5a03"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="247"
+                    y="0"
+                    width="0"
+                    height="8"
+                    fill="#89e051"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="247"
+                    y="0"
+                    width="0"
+                    height="8"
+                    fill="#384d54"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="247"
+                    y="0"
+                    width="0"
+                    height="8"
+                    fill="#012456"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="247"
+                    y="0"
+                    width="0"
+                    height="8"
+                    fill="#c6538c"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="247"
+                    y="0"
+                    width="0"
+                    height="8"
+                    fill="#C1F12E"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="247"
+                    y="0"
+                    width="0"
+                    height="8"
+                    fill="#336790"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="247"
+                    y="0"
+                    width="0"
+                    height="8"
+                    fill="#ff3e00"
+                    class="lang-progress"
+                /><rect
+                    mask="url(#rect-mask)"
+                    x="247"
+                    y="0"
+                    width="0"
+                    height="8"
+                    fill="#DA3434"
                     class="lang-progress"
                 /></svg><g transform="translate(0, 25)"><g transform="translate(0, 0)"><g class="stagger" style="animation-delay: 225ms">
-                <circle cx="5" cy="6" r="5" fill="#DEA584" />
-                <text x="15" y="10" class='lang-name'>Rust 11.00%</text>
+                <circle cx="5" cy="6" r="5" fill="#178600" />
+                <text x="15" y="10" class='lang-name'>C# 32.85%</text>
             </g></g><g transform="translate(0, 25)"><g class="stagger" style="animation-delay: 300ms">
-                <circle cx="5" cy="6" r="5" fill="#b07219" />
-                <text x="15" y="10" class='lang-name'>Java 10.00%</text>
+                <circle cx="5" cy="6" r="5" fill="#e34c26" />
+                <text x="15" y="10" class='lang-name'>HTML 19.35%</text>
             </g></g><g transform="translate(0, 50)"><g class="stagger" style="animation-delay: 375ms">
-                <circle cx="5" cy="6" r="5" fill="#F0DB4F" />
-                <text x="15" y="10" class='lang-name'>JavaScript 8.00%</text>
+                <circle cx="5" cy="6" r="5" fill="#DA5B0B" />
+                <text x="15" y="10" class='lang-name'>Jupyter Notebook 12.83%</text>
             </g></g><g transform="translate(0, 75)"><g class="stagger" style="animation-delay: 450ms">
-                <circle cx="5" cy="6" r="5" fill="#f34b7d" />
-                <text x="15" y="10" class='lang-name'>C++ 8.00%</text>
+                <circle cx="5" cy="6" r="5" fill="#b07219" />
+                <text x="15" y="10" class='lang-name'>Java 11.51%</text>
             </g></g><g transform="translate(0, 100)"><g class="stagger" style="animation-delay: 525ms">
-                <circle cx="5" cy="6" r="5" fill="#555555" />
-                <text x="15" y="10" class='lang-name'>C 7.00%</text>
+                <circle cx="5" cy="6" r="5" fill="#3572A5" />
+                <text x="15" y="10" class='lang-name'>Python 6.17%</text>
             </g></g><g transform="translate(0, 125)"><g class="stagger" style="animation-delay: 600ms">
-                <circle cx="5" cy="6" r="5" fill="#A97BFF" />
-                <text x="15" y="10" class='lang-name'>Kotlin 6.00%</text>
+                <circle cx="5" cy="6" r="5" fill="#3178c6" />
+                <text x="15" y="10" class='lang-name'>TypeScript 4.78%</text>
             </g></g><g transform="translate(0, 150)"><g class="stagger" style="animation-delay: 675ms">
-                <circle cx="5" cy="6" r="5" fill="#306998" />
-                <text x="15" y="10" class='lang-name'>Python 6.00%</text>
+                <circle cx="5" cy="6" r="5" fill="#f1e05a" />
+                <text x="15" y="10" class='lang-name'>JavaScript 3.61%</text>
             </g></g><g transform="translate(0, 175)"><g class="stagger" style="animation-delay: 750ms">
-                <circle cx="5" cy="6" r="5" fill="#4F5D95" />
-                <text x="15" y="10" class='lang-name'>PHP 5.00%</text>
+                <circle cx="5" cy="6" r="5" fill="#555555" />
+                <text x="15" y="10" class='lang-name'>C 3.55%</text>
             </g></g><g transform="translate(0, 200)"><g class="stagger" style="animation-delay: 825ms">
-                <circle cx="5" cy="6" r="5" fill="#2b7489" />
-                <text x="15" y="10" class='lang-name'>TypeScript 5.00%</text>
+                <circle cx="5" cy="6" r="5" fill="#41b883" />
+                <text x="15" y="10" class='lang-name'>Vue 1.70%</text>
             </g></g><g transform="translate(0, 225)"><g class="stagger" style="animation-delay: 900ms">
-                <circle cx="5" cy="6" r="5" fill="#c22d40" />
-                <text x="15" y="10" class='lang-name'>Scala 4.00%</text>
-            </g></g><g transform="translate(150, 0)"><g class="stagger" style="animation-delay: 975ms">
-                <circle cx="5" cy="6" r="5" fill="#701516" />
-                <text x="15" y="10" class='lang-name'>Ruby 4.00%</text>
-            </g></g><g transform="translate(150, 25)"><g class="stagger" style="animation-delay: 1050ms">
-                <circle cx="5" cy="6" r="5" fill="#0298c3" />
-                <text x="15" y="10" class='lang-name'>Perl 4.00%</text>
-            </g></g><g transform="translate(150, 50)"><g class="stagger" style="animation-delay: 1125ms">
-                <circle cx="5" cy="6" r="5" fill="#5e5086" />
-                <text x="15" y="10" class='lang-name'>Haskell 4.00%</text>
-            </g></g><g transform="translate(150, 75)"><g class="stagger" style="animation-delay: 1200ms">
-                <circle cx="5" cy="6" r="5" fill="#ffac45" />
-                <text x="15" y="10" class='lang-name'>Swift 3.00%</text>
-            </g></g><g transform="translate(150, 100)"><g class="stagger" style="animation-delay: 1275ms">
-                <circle cx="5" cy="6" r="5" fill="#6e4a7e" />
-                <text x="15" y="10" class='lang-name'>Elixir 3.00%</text>
-            </g></g><g transform="translate(150, 125)"><g class="stagger" style="animation-delay: 1350ms">
-                <circle cx="5" cy="6" r="5" fill="#00ADD8" />
-                <text x="15" y="10" class='lang-name'>Go 3.00%</text>
-            </g></g><g transform="translate(150, 150)"><g class="stagger" style="animation-delay: 1425ms">
-                <circle cx="5" cy="6" r="5" fill="#db5855" />
-                <text x="15" y="10" class='lang-name'>Clojure 3.00%</text>
-            </g></g><g transform="translate(150, 175)"><g class="stagger" style="animation-delay: 1500ms">
-                <circle cx="5" cy="6" r="5" fill="#000080" />
-                <text x="15" y="10" class='lang-name'>Lua 2.00%</text>
-            </g></g><g transform="translate(150, 200)"><g class="stagger" style="animation-delay: 1575ms">
-                <circle cx="5" cy="6" r="5" fill="#00B4AB" />
-                <text x="15" y="10" class='lang-name'>Dart 2.00%</text>
-            </g></g><g transform="translate(150, 225)"><g class="stagger" style="animation-delay: 1650ms">
-                <circle cx="5" cy="6" r="5" fill="#e16737" />
-                <text x="15" y="10" class='lang-name'>MATLAB 2.00%</text>
+                <circle cx="5" cy="6" r="5" fill="#4F5D95" />
+                <text x="15" y="10" class='lang-name'>PHP 1.28%</text>
+            </g></g><g transform="translate(0, 250)"><g class="stagger" style="animation-delay: 975ms">
+                <circle cx="5" cy="6" r="5" fill="#563d7c" />
+                <text x="15" y="10" class='lang-name'>CSS 0.79%</text>
+            </g></g><g transform="translate(150, 0)"><g class="stagger" style="animation-delay: 1050ms">
+                <circle cx="5" cy="6" r="5" fill="#dea584" />
+                <text x="15" y="10" class='lang-name'>Rust 0.56%</text>
+            </g></g><g transform="translate(150, 25)"><g class="stagger" style="animation-delay: 1125ms">
+                <circle cx="5" cy="6" r="5" fill="#427819" />
+                <text x="15" y="10" class='lang-name'>Makefile 0.21%</text>
+            </g></g><g transform="translate(150, 50)"><g class="stagger" style="animation-delay: 1200ms">
+                <circle cx="5" cy="6" r="5" fill="#ff5a03" />
+                <text x="15" y="10" class='lang-name'>Astro 0.19%</text>
+            </g></g><g transform="translate(150, 75)"><g class="stagger" style="animation-delay: 1275ms">
+                <circle cx="5" cy="6" r="5" fill="#89e051" />
+                <text x="15" y="10" class='lang-name'>Shell 0.19%</text>
+            </g></g><g transform="translate(150, 100)"><g class="stagger" style="animation-delay: 1350ms">
+                <circle cx="5" cy="6" r="5" fill="#384d54" />
+                <text x="15" y="10" class='lang-name'>Dockerfile 0.12%</text>
+            </g></g><g transform="translate(150, 125)"><g class="stagger" style="animation-delay: 1425ms">
+                <circle cx="5" cy="6" r="5" fill="#012456" />
+                <text x="15" y="10" class='lang-name'>PowerShell 0.10%</text>
+            </g></g><g transform="translate(150, 150)"><g class="stagger" style="animation-delay: 1500ms">
+                <circle cx="5" cy="6" r="5" fill="#c6538c" />
+                <text x="15" y="10" class='lang-name'>SCSS 0.08%</text>
+            </g></g><g transform="translate(150, 175)"><g class="stagger" style="animation-delay: 1575ms">
+                <circle cx="5" cy="6" r="5" fill="#C1F12E" />
+                <text x="15" y="10" class='lang-name'>Batchfile 0.07%</text>
+            </g></g><g transform="translate(150, 200)"><g class="stagger" style="animation-delay: 1650ms">
+                <circle cx="5" cy="6" r="5" fill="#336790" />
+                <text x="15" y="10" class='lang-name'>PLpgSQL 0.04%</text>
+            </g></g><g transform="translate(150, 225)"><g class="stagger" style="animation-delay: 1725ms">
+                <circle cx="5" cy="6" r="5" fill="#ff3e00" />
+                <text x="15" y="10" class='lang-name'>Svelte 0.01%</text>
+            </g></g><g transform="translate(150, 250)"><g class="stagger" style="animation-delay: 1800ms">
+                <circle cx="5" cy="6" r="5" fill="#DA3434" />
+                <text x="15" y="10" class='lang-name'>CMake 0.01%</text>
             </g></g></g>
 </svg>
+</g>
+            
+    </g>
+</svg>
+    

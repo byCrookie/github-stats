@@ -24,6 +24,7 @@ use themes::Theme;
 mod card;
 mod github;
 mod icons;
+mod languagecolors;
 mod stats;
 mod themes;
 mod toplangs;
@@ -128,15 +129,19 @@ async fn all_endpoint(config: Data<Config>) -> impl Responder {
             let width: f64 = 300.0;
             let x_offset: f64 = 25.0;
             let y_offset: f64 = 35.0;
-            let gap: f64 = 20.0;
-            let langs: HashMap<String, toplangs::Lang> = HashMap::new();
-            let lang_count: usize = 20;
+            let gap: f64 = 30.0;
+            let lang_count: usize = 40;
             let title: &str = "Stats";
             let theme: Theme = crate::themes::dark();
             let rendered_stats =
                 crate::stats::render_stats(&theme, stats.total_stars, stats.total_commits);
-            let rendered_toplangs =
-                crate::toplangs::render_top_languages(&theme, x_offset, width, langs, lang_count);
+            let rendered_toplangs = crate::toplangs::render_top_languages(
+                &theme,
+                x_offset,
+                width,
+                stats.languages,
+                lang_count,
+            );
             let rendered_card = crate::card::render_card(
                 vec![rendered_stats, rendered_toplangs],
                 x_offset,
@@ -179,9 +184,10 @@ async fn main() -> Result<(), Error> {
         Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err.to_string())),
     };
 
+    crate::card::test();
     crate::stats::test();
     crate::toplangs::test();
-    crate::card::test();
+    // crate::github::test(&config.github_user, &config.github_token).await;
 
     HttpServer::new(move || {
         App::new()

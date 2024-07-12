@@ -13,10 +13,11 @@ use url::Url;
 const MAX_RETRIES: u32 = 2;
 const INITIAL_BACKOFF: u64 = 2;
 
-#[derive(Debug)]
+#[derive(Deserialize, Serialize, Debug)]
 pub struct Stats {
     pub total_stars: u32,
     pub total_commits: u32,
+    pub languages: HashMap<String, Language>,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -26,6 +27,7 @@ struct Repository {
     full_name: String,
     owner: Owner,
     stargazers_count: u32,
+    languages_url: String,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -53,11 +55,11 @@ struct CommitAuthor {
     date: String,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
-struct Language {
-    name: String,
-    color: String,
-    size: u32,
+#[derive(Deserialize, Serialize, Debug, Clone)]
+pub struct Language {
+    pub name: String,
+    pub color: String,
+    pub size: f64,
 }
 
 #[derive(Deserialize, Serialize, Debug)]
@@ -299,9 +301,45 @@ impl Stats {
 
         let total_commits = commit_result.total_count;
 
+        let mut languages: HashMap<String, Language> = HashMap::new();
+        let colors: HashMap<String, String> = crate::languagecolors::colors();
+        for repo in repo_result.items.iter() {
+            let langs: HashMap<String, f64> = make_github_request(&client, &repo.languages_url)
+                .await?
+                .json()
+                .await?;
+
+            for lang in langs.iter() {
+                if languages.contains_key(lang.0) {
+                    let existing: &Language = languages.get(lang.0).unwrap();
+                    languages.insert(
+                        lang.0.clone(),
+                        Language {
+                            color: existing.color.clone(),
+                            name: existing.name.clone(),
+                            size: existing.size + lang.1,
+                        },
+                    );
+                    continue;
+                }
+
+                let default = String::from("#FBFF00");
+                let color = colors.get(&lang.0.clone()).unwrap_or(&default);
+
+                let language = Language {
+                    color: color.clone(),
+                    name: lang.0.clone(),
+                    size: lang.1.clone(),
+                };
+
+                languages.insert(lang.0.clone(), language);
+            }
+        }
+
         let stats = Stats {
             total_stars,
             total_commits,
+            languages: languages,
         };
 
         debug!("{:#?}", stats);
@@ -317,4 +355,8 @@ pub async fn request_stats(github_user: &str, github_token: &str) -> Result<Stat
             return Err(err);
         }
     }
+}
+
+pub async fn test(github_user: &str, github_token: &str) {
+    let _ = request_stats(&github_user, &github_token).await.unwrap();
 }

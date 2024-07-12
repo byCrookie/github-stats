@@ -1,4 +1,11 @@
 
+<svg width='300' height='122.5' viewBox='0 0 300 122.5' xmlns='http://www.w3.org/2000/svg'>
+    <rect x='0' y='0' width='300' height='122.5' rx='4.5' fill='#151515' stroke='#fff'/>
+    <g transform='translate(25, 35)'>
+        <text style="font: 600 18px 'Segoe UI', Ubuntu, 'Helvetica Neue', Sans-Serif; fill: #fff;">Stats</text>
+        
+<g transform='translate(0, 18)'>
+    
 <svg xmlns='http://www.w3.org/2000/svg'>
     <style>
         
@@ -42,5 +49,10 @@
     <text class='stat' x='140' y='12.5'>1.2k</text>
 </g>
     
+</svg>
+    
+</g>
+            
+    </g>
 </svg>
     

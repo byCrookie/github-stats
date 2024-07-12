@@ -20,7 +20,8 @@ pub fn render_card(
     let height: f64 = parts.len() as f64 * gap
         + parts.iter().map(|p| p.height).sum::<f64>()
         + y_offset
-        + title_height;
+        + title_height
+        + y_offset / 2.0;
     let title_color: String = theme.title_color;
     let background_color: String = theme.background_color;
     let border_color: String = theme.border_color;

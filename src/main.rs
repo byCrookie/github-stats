@@ -231,7 +231,7 @@ async fn main() -> Result<(), Error> {
     let port: u16 = config.port.clone();
 
     let governor_conf = match GovernorConfigBuilder::default()
-        .per_second(5)
+        .per_second(3)
         .burst_size(3)
         .finish()
     {

@@ -16,7 +16,6 @@ use log::{debug, error, info, LevelFilter};
 use mime;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use tokio::time::sleep;
 
 use themes::Theme;
 
@@ -269,8 +268,5 @@ async fn main() -> Result<(), Error> {
         }
     };
 
-    info!("sleep for 30s");
-    sleep(Duration::from_secs(30)).await;
-    info!("30s have elapsed");
     Ok(())
 }

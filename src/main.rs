@@ -16,7 +16,7 @@ use actix_web::{
 use config::{ConfigError, Environment};
 use dotenv::dotenv;
 use env_logger::Target;
-use log::{debug, info, LevelFilter};
+use log::{debug, error, info, LevelFilter};
 use mime;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
@@ -185,7 +185,6 @@ async fn health_endpoint() -> impl Responder {
     HttpResponse::Ok().body("healthy")
 }
 
-
 #[actix_web::main]
 async fn main() -> Result<(), Error> {
     dotenv().ok();
@@ -197,7 +196,10 @@ async fn main() -> Result<(), Error> {
 
     let config = match Config::from_env() {
         Ok(config) => config,
-        Err(err) => return Err(Error::new(io::ErrorKind::Other, err.to_string())),
+        Err(err) => {
+            error!("Failed to read config: {:?}", err);
+            return Err(Error::new(io::ErrorKind::Other, err.to_string()));
+        }
     };
 
     // crate::card::test();
@@ -208,15 +210,21 @@ async fn main() -> Result<(), Error> {
     let address: String = config.address.clone();
     let port: u16 = config.port.clone();
 
-    let governor_conf = GovernorConfigBuilder::default()
+    let governor_conf = match GovernorConfigBuilder::default()
         .per_second(5)
         .burst_size(3)
         .finish()
-        .unwrap();
+    {
+        Some(conf) => conf,
+        None => {
+            error!("Failed to build Governor config");
+            return Err(Error::new(io::ErrorKind::Other, "Failed to build Governor config"));
+        }
+    };
 
     info!("Running on {address}:{port}");
 
-    HttpServer::new(move || {
+    return match HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
             .wrap(Governor::new(&governor_conf))
@@ -228,5 +236,11 @@ async fn main() -> Result<(), Error> {
         .bind((address, port))?
         .workers(2)
         .run()
-        .await
+        .await {
+        Ok(_) => Ok(()),
+        Err(err) => {
+            error!("Failed to start server: {:?}", err);
+            Err(Error::new(io::ErrorKind::Other, err.to_string()))
+        }
+    };
 }

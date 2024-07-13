@@ -5,14 +5,10 @@ use std::{
     time::{Duration, SystemTime},
 };
 
+use actix_files::NamedFile;
 use actix_governor::{Governor, GovernorConfigBuilder};
-use actix_web::{
-    App,
-    get,
-    http::header::{self, CacheControl, CacheDirective},
-    HttpResponse,
-    HttpServer, middleware::Logger, Responder, web::Data,
-};
+use actix_web::{App, Either, get, http::header::{self, CacheControl, CacheDirective}, HttpResponse, HttpServer, middleware::Logger, Responder, web, web::Data};
+use actix_web::http::{Method, StatusCode};
 use config::{ConfigError, Environment};
 use dotenv::dotenv;
 use env_logger::Target;
@@ -89,16 +85,23 @@ fn read_file_if_recent(path: &Path, seconds: u32) -> Result<Option<String>, anyh
 
 #[derive(Serialize)]
 struct Endpoints {
+    root_url: String,
     all_url: String,
+    health_url: String,
+    favicon_url: String,
 }
 
 #[get("/")]
-async fn root_endpoint(config: Data<Config>) -> impl Responder {
+async fn root_endpoint(config: Data<Config>) -> Result<HttpResponse, Error> {
     let endpoints = Endpoints {
+        root_url: format!("{}/", config.base_url),
         all_url: format!("{}/all", config.base_url),
+        health_url: format!("{}/health", config.base_url),
+        favicon_url: format!("{}/favicon.ico", config.base_url),
     };
 
-    HttpResponse::Ok().body(format!("{}", json!(endpoints)))
+    let json = serde_json::to_string_pretty(&endpoints)?;
+    Ok(HttpResponse::Ok().body(format!("{}", json)))
 }
 
 #[get("/all")]
@@ -185,6 +188,23 @@ async fn health_endpoint() -> impl Responder {
     HttpResponse::Ok().body("healthy")
 }
 
+#[get("/favicon.ico")]
+async fn favicon_endpoint() -> Result<impl Responder, Error> {
+    Ok(NamedFile::open("static/favicon.ico")?)
+}
+
+async fn default_handler(req_method: Method) -> Result<impl Responder, Error> {
+    match req_method {
+        Method::GET => {
+            let file = NamedFile::open("static/404.html")?
+                .customize()
+                .with_status(StatusCode::NOT_FOUND);
+            Ok(Either::Left(file))
+        }
+        _ => Ok(Either::Right(HttpResponse::MethodNotAllowed().finish())),
+    }
+}
+
 #[actix_web::main]
 async fn main() -> Result<(), Error> {
     dotenv().ok();
@@ -232,6 +252,8 @@ async fn main() -> Result<(), Error> {
             .service(root_endpoint)
             .service(all_endpoint)
             .service(health_endpoint)
+            .service(favicon_endpoint)
+            .default_service(web::to(default_handler))
     })
         .bind((address, port))?
         .workers(2)

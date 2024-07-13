@@ -22,3 +22,9 @@ Cargo.lock
 
 # Jetbrains
 .idea/
+
+# Files
+all_cache.svg
+card.svg
+stats.svg
+toplangs.svg

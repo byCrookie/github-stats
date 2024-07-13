@@ -4,13 +4,14 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
+actix-files = "0.6.6"
 actix-governor = "0.5.0"
 actix-web = "4"
 anyhow = "1.0.86"
 config = "0.14.0"
 dotenv = "0.15.0"
 env_logger = "0.11.3"
-log = { version = "0.4.22", features = ["kv", "kv_unstable"] }
+log = { version = "0.4.22" }
 mime = "0.3.17"
 reqwest = { version = "0.12.5", features = ["json"] }
 serde = "1.0.203"

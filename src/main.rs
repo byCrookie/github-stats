@@ -7,11 +7,11 @@ use std::{
 
 use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web::{
+    App,
     get,
     http::header::{self, CacheControl, CacheDirective},
-    middleware::Logger,
-    web::Data,
-    App, HttpResponse, HttpServer, Responder,
+    HttpResponse,
+    HttpServer, middleware::Logger, Responder, web::Data,
 };
 use config::{ConfigError, Environment};
 use dotenv::dotenv;
@@ -180,6 +180,12 @@ async fn all_endpoint(config: Data<Config>) -> impl Responder {
     return HttpResponse::InternalServerError().finish();
 }
 
+#[get("/health")]
+async fn health_endpoint() -> impl Responder {
+    HttpResponse::Ok().body("healthy")
+}
+
+
 #[actix_web::main]
 async fn main() -> Result<(), Error> {
     dotenv().ok();
@@ -217,9 +223,10 @@ async fn main() -> Result<(), Error> {
             .app_data(Data::new(config.clone()))
             .service(root_endpoint)
             .service(all_endpoint)
+            .service(health_endpoint)
     })
-    .bind((address, port))?
-    .workers(2)
-    .run()
-    .await
+        .bind((address, port))?
+        .workers(2)
+        .run()
+        .await
 }

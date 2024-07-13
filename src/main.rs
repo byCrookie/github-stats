@@ -16,6 +16,7 @@ use log::{debug, error, info, LevelFilter};
 use mime;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
+use tokio::time::sleep;
 
 use themes::Theme;
 
@@ -244,7 +245,7 @@ async fn main() -> Result<(), Error> {
 
     info!("Running on {address}:{port}");
 
-    return match HttpServer::new(move || {
+    match HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
             .wrap(Governor::new(&governor_conf))
@@ -259,10 +260,17 @@ async fn main() -> Result<(), Error> {
         .workers(2)
         .run()
         .await {
-        Ok(_) => Ok(()),
+        Ok(_) => {
+            info!("Server stopped");
+        }
         Err(err) => {
-            error!("Failed to start server: {:?}", err);
-            Err(Error::new(io::ErrorKind::Other, err.to_string()))
+            error!("Running server failed: {:?}", err);
+            return Err(Error::new(io::ErrorKind::Other, err.to_string()));
         }
     };
+
+    info!("sleep for 30s");
+    sleep(Duration::from_secs(30)).await;
+    info!("30s have elapsed");
+    Ok(())
 }

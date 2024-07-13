@@ -14,7 +14,7 @@ RUN cargo build --target x86_64-unknown-linux-musl --release
 
 RUN strip target/x86_64-unknown-linux-musl/release/github-stats
 
-FROM alpine:latest AS runtime
+FROM debian:bullseye-slim AS runtime
 ARG STATS_PORT
 ENV RUST_BACKTRACE=1
 

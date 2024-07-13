@@ -298,6 +298,9 @@ async fn main() -> Result<(), Error> {
 
     return tokio::select! {
         r = server => {r},
-        _ = sigterm => {Err(Error::new(io::ErrorKind::Other, "SIGTERM failed"))},
+        _ = sigterm => {
+            error!("SIGTERM failed");
+            Err(Error::new(io::ErrorKind::Other, "SIGTERM failed"))
+        },
     };
 }

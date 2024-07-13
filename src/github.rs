@@ -1,12 +1,13 @@
-use anyhow::anyhow;
-use log::{debug, error};
-use reqwest::header::{
-    HeaderMap, HeaderName, HeaderValue, ACCEPT, AUTHORIZATION, LINK, USER_AGENT,
-};
-use reqwest::Client;
-use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use std::collections::HashMap;
 use std::time::{Duration, UNIX_EPOCH};
+
+use anyhow::anyhow;
+use log::{debug, error};
+use reqwest::Client;
+use reqwest::header::{
+    ACCEPT, AUTHORIZATION, HeaderMap, HeaderName, HeaderValue, LINK, USER_AGENT,
+};
+use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::sleep;
 use url::Url;
 
@@ -212,7 +213,7 @@ async fn fetch_all_pages<T: DeserializeOwned>(
     }
 
     Ok(SearchResult {
-        total_count: total_count,
+        total_count,
         incomplete_results: false,
         items: all_items,
     })
@@ -271,7 +272,7 @@ impl Stats {
         );
         headers.insert(USER_AGENT, HeaderValue::from_str(&github_user)?);
 
-        let client = reqwest::Client::builder()
+        let client = Client::builder()
             .default_headers(headers)
             .connection_verbose(true)
             .http1_title_case_headers()
@@ -283,7 +284,7 @@ impl Stats {
                 "https://api.github.com/search/repositories?q=user:{github_user}&per_page=100"
             ),
         )
-        .await?;
+            .await?;
 
         let total_stars = repo_result
             .items
@@ -295,14 +296,14 @@ impl Stats {
             &client,
             &format!("https://api.github.com/search/commits?q=author:{github_user}"),
         )
-        .await?
-        .json()
-        .await?;
+            .await?
+            .json()
+            .await?;
 
         let total_commits = commit_result.total_count;
 
         let mut languages: HashMap<String, Language> = HashMap::new();
-        let colors: HashMap<String, String> = crate::languagecolors::colors();
+        let colors: HashMap<String, String> = crate::language_colors::colors();
         for repo in repo_result.items.iter() {
             let langs: HashMap<String, f64> = make_github_request(&client, &repo.languages_url)
                 .await?
@@ -339,7 +340,7 @@ impl Stats {
         let stats = Stats {
             total_stars,
             total_commits,
-            languages: languages,
+            languages,
         };
 
         debug!("{:#?}", stats);
@@ -348,13 +349,13 @@ impl Stats {
 }
 
 pub async fn request_stats(github_user: &str, github_token: &str) -> Result<Stats, anyhow::Error> {
-    match Stats::request(github_user, github_token).await {
-        Ok(stats) => return Ok(stats),
+    return match Stats::request(github_user, github_token).await {
+        Ok(stats) => Ok(stats),
         Err(err) => {
             error!("{err}");
-            return Err(err);
+            Err(err)
         }
-    }
+    };
 }
 
 pub async fn test(github_user: &str, github_token: &str) {

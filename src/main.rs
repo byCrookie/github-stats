@@ -1,10 +1,17 @@
+use std::{
+    fs,
+    io::{self, Error, Read, Write},
+    path::Path,
+    time::{Duration, SystemTime},
+};
+
 use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web::{
+    App,
     get,
     http::header::{self, CacheControl, CacheDirective},
-    middleware::Logger,
-    web::Data,
-    App, HttpResponse, HttpServer, Responder,
+    HttpResponse,
+    HttpServer, middleware::Logger, Responder, web::Data,
 };
 use config::{ConfigError, Environment};
 use dotenv::dotenv;
@@ -13,18 +20,13 @@ use log::{debug, info, LevelFilter};
 use mime;
 use serde::{Deserialize, Serialize};
 use serde_json::json;
-use std::{
-    fs,
-    io::{self, Error, Read, Write},
-    path::Path,
-    time::{Duration, SystemTime},
-};
+
 use themes::Theme;
 
 mod card;
 mod github;
 mod icons;
-mod languagecolors;
+mod language_colors;
 mod stats;
 mod themes;
 mod toplangs;
@@ -115,14 +117,14 @@ async fn all_endpoint(config: Data<Config>) -> impl Responder {
         return HttpResponse::InternalServerError().finish();
     }
 
-    let stats = crate::github::request_stats(&config.github_user, &config.github_token).await;
+    let stats = github::request_stats(&config.github_user, &config.github_token).await;
 
     if let Err(_err) = stats {
         return HttpResponse::InternalServerError().finish();
     }
 
     if let Ok(stats) = stats {
-        let file = std::fs::File::create(&cache_file_path);
+        let file = fs::File::create(&cache_file_path);
 
         if let Err(err) = file {
             debug!("can not open/create {}: {}", cache_file_path.display(), err);
@@ -136,17 +138,17 @@ async fn all_endpoint(config: Data<Config>) -> impl Responder {
             let gap: f64 = 30.0;
             let lang_count: usize = 40;
             let title: &str = "Stats";
-            let theme: Theme = crate::themes::dark();
+            let theme: Theme = themes::dark();
             let rendered_stats =
-                crate::stats::render_stats(&theme, stats.total_stars, stats.total_commits);
-            let rendered_toplangs = crate::toplangs::render_top_languages(
+                stats::render_stats(&theme, stats.total_stars, stats.total_commits);
+            let rendered_toplangs = toplangs::render_top_languages(
                 &theme,
                 x_offset,
                 width,
                 stats.languages,
                 lang_count,
             );
-            let rendered_card = crate::card::render_card(
+            let rendered_card = card::render_card(
                 vec![rendered_stats, rendered_toplangs],
                 x_offset,
                 y_offset,
@@ -189,7 +191,7 @@ async fn main() -> Result<(), Error> {
 
     let config = match Config::from_env() {
         Ok(config) => config,
-        Err(err) => return Err(io::Error::new(io::ErrorKind::Other, err.to_string())),
+        Err(err) => return Err(Error::new(io::ErrorKind::Other, err.to_string())),
     };
 
     // crate::card::test();
@@ -216,8 +218,8 @@ async fn main() -> Result<(), Error> {
             .service(root_endpoint)
             .service(all_endpoint)
     })
-    .bind((address, port))?
-    .workers(2)
-    .run()
-    .await
+        .bind((address, port))?
+        .workers(2)
+        .run()
+        .await
 }

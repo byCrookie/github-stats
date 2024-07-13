@@ -255,7 +255,7 @@ async fn main() -> Result<(), Error> {
             .default_service(web::to(default_handler))
     })
         .bind((address, port))?
-        .workers(2)
+        .workers(1)
         .run()
         .await {
         Ok(_) => {

@@ -7,7 +7,14 @@ use std::{
 
 use actix_files::NamedFile;
 use actix_governor::{Governor, GovernorConfigBuilder};
-use actix_web::{App, Either, get, http::header::{self, CacheControl, CacheDirective}, HttpResponse, HttpServer, middleware::Logger, Responder, web, web::Data};
+use actix_web::{
+    App,
+    Either,
+    get,
+    http::header::{self, CacheControl, CacheDirective},
+    HttpResponse,
+    HttpServer, middleware::Logger, Responder, web, web::Data,
+};
 use actix_web::http::{Method, StatusCode};
 use config::{ConfigError, Environment};
 use dotenv::dotenv;
@@ -15,6 +22,7 @@ use env_logger::Target;
 use log::{debug, error, info, LevelFilter};
 use mime;
 use serde::{Deserialize, Serialize};
+use tokio::signal;
 
 use themes::Theme;
 
@@ -38,6 +46,7 @@ struct Config {
     cache_path: String,
     address: String,
     port: u16,
+    sigterm: bool,
 }
 
 impl Config {
@@ -48,6 +57,7 @@ impl Config {
         cfg_builder = cfg_builder.set_default("cache_path", "")?;
         cfg_builder = cfg_builder.set_default("address", "0.0.0.0")?;
         cfg_builder = cfg_builder.set_default("port", 8080)?;
+        cfg_builder = cfg_builder.set_default("sigterm", true)?;
 
         cfg_builder = cfg_builder.add_source(
             Environment::default()
@@ -228,6 +238,7 @@ async fn main() -> Result<(), Error> {
 
     let address: String = config.address.clone();
     let port: u16 = config.port.clone();
+    let sigterm: bool = config.sigterm.clone();
 
     let governor_conf = match GovernorConfigBuilder::default()
         .per_second(3)
@@ -237,13 +248,16 @@ async fn main() -> Result<(), Error> {
         Some(conf) => conf,
         None => {
             error!("Failed to build Governor config");
-            return Err(Error::new(io::ErrorKind::Other, "Failed to build Governor config"));
+            return Err(Error::new(
+                io::ErrorKind::Other,
+                "Failed to build Governor config",
+            ));
         }
     };
 
     info!("Running on {address}:{port}");
 
-    match HttpServer::new(move || {
+    let server = HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
             .wrap(Governor::new(&governor_conf))
@@ -256,16 +270,34 @@ async fn main() -> Result<(), Error> {
     })
         .bind((address, port))?
         .workers(1)
-        .run()
-        .await {
-        Ok(_) => {
-            info!("Server stopped");
-        }
-        Err(err) => {
-            error!("Running server failed: {:?}", err);
-            return Err(Error::new(io::ErrorKind::Other, err.to_string()));
-        }
-    };
+        .disable_signals()
+        .run();
 
-    Ok(())
+    if sigterm {
+        return match server.await {
+            Ok(_) => {
+                info!("Server terminated");
+                Ok(())
+            }
+            Err(err) => {
+                error!("Server terminated with error: {:?}", err);
+                Err(Error::new(io::ErrorKind::Other, err.to_string()))
+            }
+        };
+    }
+
+    let sigterm = tokio::spawn(async move {
+        loop {
+            debug!("Waiting for SIGTERM");
+            signal::ctrl_c()
+                .await
+                .expect("Failed to listen for SIGTERM");
+            debug!("SIGTERM received but not terminating.");
+        }
+    });
+
+    return tokio::select! {
+        r = server => {r},
+        _ = sigterm => {Err(Error::new(io::ErrorKind::Other, "SIGTERM failed"))},
+    };
 }

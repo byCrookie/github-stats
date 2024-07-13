@@ -22,4 +22,4 @@ ENV STATS_PORT=${STATS_PORT}
 RUN echo $STATS_PORT
 EXPOSE $STATS_PORT
 
-CMD ["/bin/github-stats"]
+CMD /bin/github-stats && tail -f /dev/null

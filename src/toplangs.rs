@@ -1,8 +1,9 @@
+use std::collections::HashMap;
+use std::io::Write;
+
 use crate::card::Part;
 use crate::github::Language;
 use crate::themes::Theme;
-use std::collections::HashMap;
-use std::io::Write;
 
 fn calculate_height(langs: usize, gap: f64, columns: u64) -> f64 {
     langs as f64 * (gap / columns as f64)
@@ -206,6 +207,7 @@ pub fn render_top_languages(
     };
 }
 
+#[allow(dead_code)]
 pub fn test() {
     let mut top_langs = HashMap::new();
     top_langs.insert(

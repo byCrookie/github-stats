@@ -3,10 +3,10 @@ use std::time::{Duration, UNIX_EPOCH};
 
 use anyhow::anyhow;
 use log::{debug, error};
-use reqwest::header::{
-    HeaderMap, HeaderName, HeaderValue, ACCEPT, AUTHORIZATION, LINK, USER_AGENT,
-};
 use reqwest::Client;
+use reqwest::header::{
+    ACCEPT, AUTHORIZATION, HeaderMap, HeaderName, HeaderValue, LINK, USER_AGENT,
+};
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::sleep;
 use url::Url;
@@ -284,7 +284,7 @@ impl Stats {
                 "https://api.github.com/search/repositories?q=user:{github_user}&per_page=100"
             ),
         )
-        .await?;
+            .await?;
 
         let total_stars = repo_result
             .items
@@ -296,9 +296,9 @@ impl Stats {
             &client,
             &format!("https://api.github.com/search/commits?q=author:{github_user}"),
         )
-        .await?
-        .json()
-        .await?;
+            .await?
+            .json()
+            .await?;
 
         let total_commits = commit_result.total_count;
 
@@ -358,6 +358,7 @@ pub async fn request_stats(github_user: &str, github_token: &str) -> Result<Stat
     };
 }
 
+#[allow(dead_code)]
 pub async fn test(github_user: &str, github_token: &str) {
     let _ = request_stats(&github_user, &github_token).await.unwrap();
 }

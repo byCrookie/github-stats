@@ -53,6 +53,7 @@ pub fn render_card(
     );
 }
 
+#[allow(dead_code)]
 pub fn test() {
     let part1 = Part {
         height: 100.0,

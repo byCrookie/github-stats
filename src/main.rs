@@ -15,7 +15,6 @@ use env_logger::Target;
 use log::{debug, error, info, LevelFilter};
 use mime;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 
 use themes::Theme;
 

@@ -1,9 +1,10 @@
+use std::io::Write;
+
 use crate::{
     card::Part,
     icons::{icon_commits, icon_star},
     themes::Theme,
 };
-use std::io::Write;
 
 fn format_number(num: u32) -> String {
     if num < 1000 {
@@ -84,6 +85,7 @@ fn create_text_node(icon: &str, label: &str, value: u32, index: u64) -> String {
     )
 }
 
+#[allow(dead_code)]
 pub fn test() {
     let theme: Theme = crate::themes::dark();
     let x_offset: f64 = 25.0;

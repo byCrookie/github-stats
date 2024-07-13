@@ -7,11 +7,11 @@ use std::{
 
 use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web::{
-    App,
     get,
     http::header::{self, CacheControl, CacheDirective},
-    HttpResponse,
-    HttpServer, middleware::Logger, Responder, web::Data,
+    middleware::Logger,
+    web::Data,
+    App, HttpResponse, HttpServer, Responder,
 };
 use config::{ConfigError, Environment};
 use dotenv::dotenv;
@@ -218,8 +218,8 @@ async fn main() -> Result<(), Error> {
             .service(root_endpoint)
             .service(all_endpoint)
     })
-        .bind((address, port))?
-        .workers(2)
-        .run()
-        .await
+    .bind((address, port))?
+    .workers(2)
+    .run()
+    .await
 }

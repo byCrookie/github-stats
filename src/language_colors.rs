@@ -596,8 +596,9 @@ pub fn colors() -> HashMap<String, String> {
     lang_colors.insert("templ", "#66D0DD");
     lang_colors.insert("wisp", "#7582D1");
     lang_colors.insert("xBase", "#403a40");
-    
-    return lang_colors.into_iter()
+
+    return lang_colors
+        .into_iter()
         .map(|(k, v)| (k.to_string(), v.to_string()))
         .collect();
 }

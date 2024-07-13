@@ -56,12 +56,14 @@ pub fn render_card(
 pub fn test() {
     let part1 = Part {
         height: 100.0,
-        content: r#"<div style="height: 100px; background-color: red; opacity: 0.5;"></div>"#.to_string(),
+        content: r#"<div style="height: 100px; background-color: red; opacity: 0.5;"></div>"#
+            .to_string(),
     };
 
     let part2 = Part {
         height: 150.0,
-        content: r#"<div style="height: 150px; background-color: red; opacity: 0.5;"></div>"#.to_string(),
+        content: r#"<div style="height: 150px; background-color: red; opacity: 0.5;"></div>"#
+            .to_string(),
     };
 
     let width: f64 = 300.0;

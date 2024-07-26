@@ -22,7 +22,6 @@ use env_logger::Target;
 use log::{debug, error, info, LevelFilter};
 use mime;
 use serde::{Deserialize, Serialize};
-use tokio::signal;
 
 use themes::Theme;
 
@@ -46,7 +45,6 @@ struct Config {
     cache_path: String,
     address: String,
     port: u16,
-    sigterm: bool,
 }
 
 impl Config {
@@ -57,7 +55,6 @@ impl Config {
         cfg_builder = cfg_builder.set_default("cache_path", "")?;
         cfg_builder = cfg_builder.set_default("address", "0.0.0.0")?;
         cfg_builder = cfg_builder.set_default("port", 8080)?;
-        cfg_builder = cfg_builder.set_default("sigterm", true)?;
 
         cfg_builder = cfg_builder.add_source(
             Environment::default()
@@ -238,7 +235,6 @@ async fn main() -> Result<(), Error> {
 
     let address: String = config.address.clone();
     let port: u16 = config.port.clone();
-    let sigterm: bool = config.sigterm.clone();
 
     let governor_conf = match GovernorConfigBuilder::default()
         .per_second(3)
@@ -257,7 +253,7 @@ async fn main() -> Result<(), Error> {
 
     info!("Running on {address}:{port}");
 
-    let server = HttpServer::new(move || {
+    HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
             .wrap(Governor::new(&governor_conf))
@@ -271,47 +267,6 @@ async fn main() -> Result<(), Error> {
         .bind((address, port))?
         .workers(1)
         .disable_signals()
-        .run();
-
-    if sigterm {
-        return match server.await {
-            Ok(_) => {
-                info!("Server terminated");
-                Ok(())
-            }
-            Err(err) => {
-                error!("Server terminated with error: {:?}", err);
-                Err(Error::new(io::ErrorKind::Other, err.to_string()))
-            }
-        };
-    }
-
-    let sigterm = tokio::spawn(async move {
-        loop {
-            debug!("Waiting for SIGTERM");
-            signal::ctrl_c()
-                .await
-                .expect("Failed to listen for SIGTERM");
-            debug!("SIGTERM received but not terminating.");
-        }
-    });
-
-    return tokio::select! {
-        r = server => {
-            match r {
-                Ok(_) => {
-                    info!("Server terminated");
-                    Ok(())
-                },
-                Err(err) => {
-                    error!("Server terminated with error: {:?}", err);
-                    Err(Error::new(io::ErrorKind::Other, err.to_string()))
-                }
-            }
-        },
-        _ = sigterm => {
-            error!("SIGTERM failed");
-            Err(Error::new(io::ErrorKind::Other, "SIGTERM failed"))
-        },
-    };
+        .run()
+        .await
 }

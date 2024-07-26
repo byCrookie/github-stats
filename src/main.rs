@@ -265,8 +265,7 @@ async fn main() -> Result<(), Error> {
             .default_service(web::to(default_handler))
     })
         .bind((address, port))?
-        .workers(1)
-        .disable_signals()
+        .workers(2)
         .run()
         .await
 }

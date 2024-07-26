@@ -3,7 +3,7 @@ services:
     container_name: github-stats
     build:
       context: .
-      dockerfile: docker
+      dockerfile: Dockerfile
     env_file:
       - .env.docker
     ports:

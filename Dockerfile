@@ -9,7 +9,6 @@ COPY Cargo.toml ./Cargo.toml
 COPY src ./src
 COPY static ./static
 
-RUN cargo add openssl --features vendored
 RUN cargo build --target x86_64-unknown-linux-musl --release
 
 RUN strip target/x86_64-unknown-linux-musl/release/github-stats

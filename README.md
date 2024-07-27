@@ -4,6 +4,15 @@ A streamlined version of [anuraghazra/github-readme-stats](https://github.com/an
 implemented in rust to reduce resource
 consumption. This implementation uses filesystem caching to minimize memory usage.
 
+# Example
+
+![byCrookie's Github Stats](https://github-stats.bycrookie.com/all)
+
+# Usage
+
+If the application is running, open a browser and navigate to the root of the application. The application will return
+a json view of all possible endpoints.
+
 # Self-hosting
 
 It is recommended to use docker to self-host the application. Follow the instructions in the [Docker](#docker) section.

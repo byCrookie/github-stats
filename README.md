@@ -37,7 +37,7 @@ You can make contributions in Ethereum (ETH) and Bitcoin (BTC) to the following 
 * ETH Address: 0x1C0416cC1DDaAEEb3017D4b8Dcd3f0B82f4d94C1
 * BTC Address: bc1qygqya2w3hgpvy8hupctfkv5x06l69ydq4su2e2
 
-## Star Our Repository
+## Stars
 
 If you find github-stats beneficial and appreciate the effort that went into its creation, please consider
 showing your support by giving the repository a star on GitHub.

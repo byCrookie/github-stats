@@ -43,7 +43,8 @@ struct Config {
     github_token: String,
     base_url: String,
     cache_path: String,
-    address: String,
+    ipv4_address: String,
+    ipv6_address: String,
     port: u16,
 }
 
@@ -53,7 +54,8 @@ impl Config {
         cfg_builder = cfg_builder.set_default("cache_seconds", ONE_DAY)?;
         cfg_builder = cfg_builder.set_default("base_url", "")?;
         cfg_builder = cfg_builder.set_default("cache_path", "")?;
-        cfg_builder = cfg_builder.set_default("address", "0.0.0.0")?;
+        cfg_builder = cfg_builder.set_default("ipv4_address", "")?;
+        cfg_builder = cfg_builder.set_default("ipv6_address", "")?;
         cfg_builder = cfg_builder.set_default("port", 8080)?;
 
         cfg_builder = cfg_builder.add_source(
@@ -233,7 +235,8 @@ async fn main() -> Result<(), Error> {
     // crate::toplangs::test();
     // crate::github::test(&config.github_user, &config.github_token).await;
 
-    let address: String = config.address.clone();
+    let ipv4_address: String = config.ipv4_address.clone();
+    let ipv6_address: String = config.ipv6_address.clone();
     let port: u16 = config.port.clone();
 
     let governor_conf = match GovernorConfigBuilder::default()
@@ -251,9 +254,7 @@ async fn main() -> Result<(), Error> {
         }
     };
 
-    info!("Running on {address}:{port}");
-
-    HttpServer::new(move || {
+    let mut server = HttpServer::new(move || {
         App::new()
             .wrap(Logger::default())
             .wrap(Governor::new(&governor_conf))
@@ -263,9 +264,17 @@ async fn main() -> Result<(), Error> {
             .service(health_endpoint)
             .service(favicon_endpoint)
             .default_service(web::to(default_handler))
-    })
-        .bind((address, port))?
-        .workers(2)
-        .run()
-        .await
+    });
+
+    if !ipv4_address.is_empty() {
+        info!("Running on {ipv4_address}:{port}");
+        server = server.bind((ipv4_address, port))?;
+    }
+
+    if !ipv6_address.is_empty() {
+        info!("Running on {ipv6_address}:{port}");
+        server = server.bind((ipv6_address, port))?;
+    }
+
+    server.workers(2).run().await
 }

@@ -14,13 +14,15 @@ RUN cargo build --target x86_64-unknown-linux-musl --release
 RUN strip target/x86_64-unknown-linux-musl/release/github-stats
 
 FROM alpine:latest AS runtime
+WORKDIR /bin/github-stats
+
 ARG STATS_PORT
 ENV RUST_BACKTRACE=1
 
-COPY --from=builder /app/static /bin/static
-COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/github-stats /bin/github-stats
+COPY --from=builder /app/static ./static
+COPY --from=builder /app/target/x86_64-unknown-linux-musl/release/github-stats ./github-stats
 
 RUN echo $STATS_PORT
 EXPOSE $STATS_PORT
 
-ENTRYPOINT ["/bin/github-stats"]
+ENTRYPOINT ["/bin/github-stats/github-stats"]

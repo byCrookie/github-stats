@@ -267,13 +267,27 @@ async fn main() -> Result<(), Error> {
     });
 
     if !ipv4_address.is_empty() {
-        info!("Running on {ipv4_address}:{port}");
-        server = server.bind((ipv4_address, port))?;
+        let ipv4 = server.bind((ipv4_address.clone(), port));
+
+        if let Err(err) = ipv4 {
+            error!("Failed to bind to ipv4 {ipv4_address}:{port}: {err:?}");
+            return Err(Error::new(io::ErrorKind::Other, err.to_string()));
+        }
+
+        info!("Listening on {ipv4_address}:{port}");
+        server = ipv4.unwrap();
     }
 
     if !ipv6_address.is_empty() {
-        info!("Running on {ipv6_address}:{port}");
-        server = server.bind((ipv6_address, port))?;
+        let ipv6 = server.bind((ipv6_address.clone(), port));
+
+        if let Err(err) = ipv6 {
+            error!("Failed to bind to ipv6 {ipv6_address}:{port}: {err:?}");
+            return Err(Error::new(io::ErrorKind::Other, err.to_string()));
+        }
+
+        info!("Listening on {ipv6_address}:{port}");
+        server = ipv6.unwrap();
     }
 
     server.workers(2).run().await

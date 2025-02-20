@@ -7,15 +7,15 @@ use std::{
 
 use actix_files::NamedFile;
 use actix_governor::{Governor, GovernorConfigBuilder};
+use actix_web::http::{Method, StatusCode};
 use actix_web::{
-    App,
-    Either,
     get,
     http::header::{self, CacheControl, CacheDirective},
-    HttpResponse,
-    HttpServer, middleware::Logger, Responder, web, web::Data,
+    middleware::Logger,
+    web,
+    web::Data,
+    App, Either, HttpResponse, HttpServer, Responder,
 };
-use actix_web::http::{Method, StatusCode};
 use config::{ConfigError, Environment};
 use dotenv::dotenv;
 use env_logger::Target;
@@ -240,7 +240,7 @@ async fn main() -> Result<(), Error> {
     let port: u16 = config.port.clone();
 
     let governor_conf = match GovernorConfigBuilder::default()
-        .per_second(3)
+        .seconds_per_request(3)
         .burst_size(3)
         .finish()
     {

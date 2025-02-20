@@ -21,7 +21,7 @@ Cargo.lock
 .env.docker
 
 # Jetbrains
-.idea/
+.idea
 
 # Files
 all_cache.svg

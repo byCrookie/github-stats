@@ -1,9 +1,8 @@
 services:
   github-stats:
+    image: ghcr.io/bycrookie/github-stats:latest
     container_name: github-stats
-    build:
-      context: .
-      dockerfile: Containerfile
     env_file: .env
     ports:
       - "3001:8080"
+    restart: unless-stopped

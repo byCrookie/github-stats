@@ -201,19 +201,19 @@ pub fn render_top_languages(
     ));
     svg.push_str("\n</svg>");
 
-    return Part {
+    Part {
         height,
         content: svg,
-    };
+    }
 }
 
 #[allow(dead_code)]
 pub fn test() {
     let mut top_langs = HashMap::new();
     top_langs.insert(
-        "Dockerfile".to_string(),
+        "Containerfile".to_string(),
         Language {
-            name: "Dockerfile".to_string(),
+            name: "Containerfile".to_string(),
             size: 11492.0,
             color: "#384d54".to_string(),
         },

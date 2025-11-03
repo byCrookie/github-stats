@@ -46,6 +46,7 @@ struct Config {
     ipv4_address: String,
     ipv6_address: String,
     port: u16,
+    ignored_repositories: String,
 }
 
 impl Config {
@@ -54,9 +55,10 @@ impl Config {
         cfg_builder = cfg_builder.set_default("cache_seconds", ONE_DAY)?;
         cfg_builder = cfg_builder.set_default("base_url", "")?;
         cfg_builder = cfg_builder.set_default("cache_path", "")?;
-        cfg_builder = cfg_builder.set_default("ipv4_address", "")?;
+        cfg_builder = cfg_builder.set_default("ipv4_address", "0.0.0.0")?;
         cfg_builder = cfg_builder.set_default("ipv6_address", "")?;
         cfg_builder = cfg_builder.set_default("port", 8080)?;
+        cfg_builder = cfg_builder.set_default("ignored_repositories", "")?;
 
         cfg_builder = cfg_builder.add_source(
             Environment::default()
@@ -128,7 +130,12 @@ async fn all_endpoint(config: Data<Config>) -> impl Responder {
         return HttpResponse::InternalServerError().finish();
     }
 
-    let stats = github::request_stats(&config.github_user, &config.github_token).await;
+    let stats = github::request_stats(
+        &config.github_user,
+        &config.github_token,
+        &config.ignored_repositories,
+    )
+    .await;
 
     if let Err(_err) = stats {
         return HttpResponse::InternalServerError().finish();
@@ -188,7 +195,7 @@ async fn all_endpoint(config: Data<Config>) -> impl Responder {
         }
     }
 
-    return HttpResponse::InternalServerError().finish();
+    HttpResponse::InternalServerError().finish()
 }
 
 #[get("/health")]
@@ -275,7 +282,7 @@ async fn main() -> Result<(), Error> {
         }
 
         info!("Listening on {ipv4_address}:{port}");
-        server = ipv4.unwrap();
+        server = ipv4?;
     }
 
     if !ipv6_address.is_empty() {
@@ -287,7 +294,7 @@ async fn main() -> Result<(), Error> {
         }
 
         info!("Listening on {ipv6_address}:{port}");
-        server = ipv6.unwrap();
+        server = ipv6?;
     }
 
     server.workers(2).run().await

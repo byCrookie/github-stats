@@ -122,7 +122,7 @@ pub fn colors() -> HashMap<String, String> {
     lang_colors.insert("DenizenScript", "#FBEE96");
     lang_colors.insert("Dhall", "#dfafff");
     lang_colors.insert("DirectX 3D File", "#aace60");
-    lang_colors.insert("Dockerfile", "#384d54");
+    lang_colors.insert("Containerfile", "#384d54");
     lang_colors.insert("Dogescript", "#cca760");
     lang_colors.insert("Dotenv", "#e5d559");
     lang_colors.insert("Dylan", "#6c616e");
@@ -597,8 +597,8 @@ pub fn colors() -> HashMap<String, String> {
     lang_colors.insert("wisp", "#7582D1");
     lang_colors.insert("xBase", "#403a40");
 
-    return lang_colors
+    lang_colors
         .into_iter()
         .map(|(k, v)| (k.to_string(), v.to_string()))
-        .collect();
+        .collect()
 }

@@ -3,10 +3,10 @@ use std::time::{Duration, UNIX_EPOCH};
 
 use anyhow::anyhow;
 use log::{debug, error};
-use reqwest::Client;
 use reqwest::header::{
-    ACCEPT, AUTHORIZATION, HeaderMap, HeaderName, HeaderValue, LINK, USER_AGENT,
+    HeaderMap, HeaderName, HeaderValue, ACCEPT, AUTHORIZATION, LINK, USER_AGENT,
 };
+use reqwest::Client;
 use serde::{de::DeserializeOwned, Deserialize, Serialize};
 use tokio::time::sleep;
 use url::Url;
@@ -256,7 +256,11 @@ fn parse_link_header(header: &str) -> Result<HashMap<String, Url>, anyhow::Error
 }
 
 impl Stats {
-    pub async fn request(github_user: &str, github_token: &str) -> Result<Self, anyhow::Error> {
+    pub async fn request(
+        github_user: &str,
+        github_token: &str,
+        ignored_repos: &str,
+    ) -> Result<Self, anyhow::Error> {
         let mut headers = HeaderMap::new();
         headers.insert(
             ACCEPT,
@@ -284,7 +288,7 @@ impl Stats {
                 "https://api.github.com/search/repositories?q=user:{github_user}&per_page=100"
             ),
         )
-            .await?;
+        .await?;
 
         let total_stars = repo_result
             .items
@@ -296,15 +300,26 @@ impl Stats {
             &client,
             &format!("https://api.github.com/search/commits?q=author:{github_user}"),
         )
-            .await?
-            .json()
-            .await?;
+        .await?
+        .json()
+        .await?;
 
         let total_commits = commit_result.total_count;
 
+        let ignored_repos_list: Vec<String> = ignored_repos
+            .split(',')
+            .map(|s| s.trim().to_lowercase())
+            .filter(|s| !s.is_empty())
+            .collect();
+
         let mut languages: HashMap<String, Language> = HashMap::new();
         let colors: HashMap<String, String> = crate::language_colors::colors();
-        for repo in repo_result.items.iter() {
+        for repo in repo_result.items.iter().filter(|r| {
+            let repo_name = r.full_name.to_lowercase();
+            !ignored_repos_list
+                .iter()
+                .any(|ignored| repo_name == *ignored)
+        }) {
             let langs: HashMap<String, f64> = make_github_request(&client, &repo.languages_url)
                 .await?
                 .json()
@@ -344,21 +359,27 @@ impl Stats {
         };
 
         debug!("{:#?}", stats);
-        return Ok(stats);
+        Ok(stats)
     }
 }
 
-pub async fn request_stats(github_user: &str, github_token: &str) -> Result<Stats, anyhow::Error> {
-    return match Stats::request(github_user, github_token).await {
+pub async fn request_stats(
+    github_user: &str,
+    github_token: &str,
+    ignored_repos: &str,
+) -> Result<Stats, anyhow::Error> {
+    match Stats::request(github_user, github_token, ignored_repos).await {
         Ok(stats) => Ok(stats),
         Err(err) => {
             error!("{err}");
             Err(err)
         }
-    };
+    }
 }
 
 #[allow(dead_code)]
 pub async fn test(github_user: &str, github_token: &str) {
-    let _ = request_stats(&github_user, &github_token).await.unwrap();
+    let _ = request_stats(&github_user, &github_token, "")
+        .await
+        .unwrap();
 }

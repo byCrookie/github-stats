@@ -8,7 +8,7 @@ use crate::{
 
 fn format_number(num: u32) -> String {
     if num < 1000 {
-        return num.to_string();
+        num.to_string()
     } else if num < 1000000 {
         format!("{:.1}k", num as f32 / 1000.0)
     } else {
@@ -62,10 +62,10 @@ pub fn render_stats(theme: &Theme, total_stars: u32, total_commits: u32) -> Part
     "#
     );
 
-    return Part {
+    Part {
         height,
         content: svg,
-    };
+    }
 }
 
 fn create_text_node(icon: &str, label: &str, value: u32, index: u64) -> String {

@@ -4,6 +4,8 @@ services:
     build:
       context: .
       dockerfile: Containerfile
+      args:
+        STATS_PORT: ${STATS_PORT:-8080}
     env_file: .env
     ports:
-      - "3001:8080"
+      - "3001:${STATS_PORT:-8080}"

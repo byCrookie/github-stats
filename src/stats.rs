@@ -1,5 +1,3 @@
-use std::io::Write;
-
 use crate::{
     card::Part,
     icons::{icon_commits, icon_star},
@@ -9,10 +7,10 @@ use crate::{
 fn format_number(num: u32) -> String {
     if num < 1000 {
         num.to_string()
-    } else if num < 1000000 {
+    } else if num < 1_000_000 {
         format!("{:.1}k", num as f32 / 1000.0)
     } else {
-        format!("{:.1}M", num as f32 / 1000000.0)
+        format!("{:.1}M", num as f32 / 1_000_000.0)
     }
 }
 
@@ -85,17 +83,37 @@ fn create_text_node(icon: &str, label: &str, value: u32, index: u64) -> String {
     )
 }
 
-#[allow(dead_code)]
-pub fn test() {
-    let theme: Theme = crate::themes::dark();
-    let x_offset: f64 = 25.0;
-    let y_offset: f64 = 35.0;
-    let gap: f64 = 20.0;
-    let title: &str = "Stats";
-    let width: f64 = 300.0;
-    let part = render_stats(&theme, 34, 1234);
-    let rendered_card = crate::card::render_card(vec![part], x_offset, y_offset, gap, width, title);
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-    let mut file = std::fs::File::create("stats.svg").unwrap();
-    write!(&mut file, "{}", rendered_card).unwrap();
+    #[test]
+    fn format_number_below_thousand() {
+        assert_eq!(format_number(0), "0");
+        assert_eq!(format_number(1), "1");
+        assert_eq!(format_number(999), "999");
+    }
+
+    #[test]
+    fn format_number_thousands() {
+        assert_eq!(format_number(1000), "1.0k");
+        assert_eq!(format_number(1500), "1.5k");
+        assert_eq!(format_number(10_000), "10.0k");
+    }
+
+    #[test]
+    fn format_number_millions() {
+        assert_eq!(format_number(1_000_000), "1.0M");
+        assert_eq!(format_number(2_500_000), "2.5M");
+    }
+
+    #[test]
+    fn render_stats_produces_svg() {
+        let theme = crate::themes::dark();
+        let part = render_stats(&theme, 42, 1234);
+        assert!(part.content.contains("<svg"));
+        assert!(part.content.contains("42"));
+        assert!(part.content.contains("1.2k"));
+        assert!(part.height > 0.0);
+    }
 }

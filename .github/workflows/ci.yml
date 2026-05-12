@@ -15,7 +15,15 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+
+      - name: Check formatting
+        run: cargo fmt --all -- --check
+
+      - name: Clippy
+        run: cargo clippy --all-targets -- -D warnings
+
       - name: Build
         run: cargo build --verbose
+
       - name: Test
         run: cargo test --verbose

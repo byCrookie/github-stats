@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::time::{Duration, UNIX_EPOCH};
 
 use anyhow::anyhow;
-use log::{debug, error};
+use log::debug;
 use reqwest::header::{
     HeaderMap, HeaderName, HeaderValue, ACCEPT, AUTHORIZATION, LINK, USER_AGENT,
 };
@@ -13,6 +13,7 @@ use url::Url;
 
 const MAX_RETRIES: u32 = 2;
 const INITIAL_BACKOFF: u64 = 2;
+const REQUEST_TIMEOUT_SECS: u64 = 30;
 
 #[derive(Deserialize, Serialize, Debug)]
 pub struct Stats {
@@ -21,39 +22,11 @@ pub struct Stats {
     pub languages: HashMap<String, Language>,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Debug)]
 struct Repository {
-    id: u32,
-    name: String,
     full_name: String,
-    owner: Owner,
     stargazers_count: u32,
     languages_url: String,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-struct Owner {
-    login: String,
-    id: u32,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-struct Commit {
-    url: String,
-    sha: String,
-    commit: CommitDetail,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-struct CommitDetail {
-    author: CommitAuthor,
-    message: String,
-}
-
-#[derive(Deserialize, Serialize, Debug)]
-struct CommitAuthor {
-    name: String,
-    date: String,
 }
 
 #[derive(Deserialize, Serialize, Debug, Clone)]
@@ -63,11 +36,16 @@ pub struct Language {
     pub size: f64,
 }
 
-#[derive(Deserialize, Serialize, Debug)]
+#[derive(Deserialize, Debug)]
 struct SearchResult<T> {
     total_count: u32,
     incomplete_results: bool,
     items: Vec<T>,
+}
+
+#[derive(Deserialize)]
+struct CommitCount {
+    total_count: u32,
 }
 
 async fn make_github_request(
@@ -86,13 +64,9 @@ async fn make_github_request(
                 if resp.status() == reqwest::StatusCode::OK {
                     if let Some(rate_limit) = ratelimit_remaining(&headers) {
                         if rate_limit == 0 {
-                            debug!("Primary rate limit exceeded. Rate limit remaining is zero");
-                            if let Some(retry_after) = ratelimit_reset(&headers) {
-                                debug!(
-                                    "Primary rate limit exceeded, sleeping for {} seconds",
-                                    retry_after
-                                );
-                                sleep(Duration::from_secs(retry_after)).await;
+                            if let Some(reset_secs) = ratelimit_reset(&headers) {
+                                debug!("Rate limit exhausted, sleeping {reset_secs}s");
+                                sleep(Duration::from_secs(reset_secs)).await;
                                 continue;
                             }
                         }
@@ -100,15 +74,12 @@ async fn make_github_request(
                 }
 
                 if let Some(retry_after) = retry_after(&headers) {
-                    debug!(
-                        "Secondary rate limit exceeded, sleeping for {} seconds",
-                        retry_after
-                    );
+                    debug!("Secondary rate limit, sleeping {retry_after}s");
                     sleep(Duration::from_secs(retry_after)).await;
                     continue;
                 }
 
-                let retry_http_codes: Vec<reqwest::StatusCode> = vec![
+                let retry_codes = [
                     reqwest::StatusCode::REQUEST_TIMEOUT,
                     reqwest::StatusCode::TOO_MANY_REQUESTS,
                     reqwest::StatusCode::INTERNAL_SERVER_ERROR,
@@ -119,7 +90,7 @@ async fn make_github_request(
 
                 if resp.status().is_success() {
                     return Ok(resp);
-                } else if retry_http_codes.contains(&resp.status()) {
+                } else if retry_codes.contains(&resp.status()) {
                     debug!("Request failed with status: {}. Retrying...", resp.status());
                 } else {
                     return Err(anyhow!("Request failed with status: {}.", resp.status()));
@@ -141,75 +112,52 @@ async fn make_github_request(
 }
 
 fn ratelimit_remaining(headers: &HeaderMap) -> Option<u64> {
-    if let Some(rate_limit_remaining_header) = headers.get("x-ratelimit-remaining") {
-        if let Ok(rate_limit_remaining) = rate_limit_remaining_header.to_str() {
-            if let Ok(rate_limit) = rate_limit_remaining.parse::<u64>() {
-                return Some(rate_limit);
-            }
-        }
-    }
-    None
+    headers
+        .get("x-ratelimit-remaining")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.parse().ok())
 }
 
 fn ratelimit_reset(headers: &HeaderMap) -> Option<u64> {
-    if let Some(rate_limit_reset_header) = headers.get("x-ratelimit-reset") {
-        if let Ok(rate_limit_reset) = rate_limit_reset_header.to_str() {
-            if let Ok(reset_timestamp) = rate_limit_reset.parse::<u64>() {
-                if let Ok(now) = std::time::SystemTime::now().duration_since(UNIX_EPOCH) {
-                    let now_secs = now.as_secs();
-                    if reset_timestamp > now_secs {
-                        return Some(reset_timestamp - now_secs);
-                    }
-                }
-            }
-        }
-    }
-    None
+    let reset_timestamp: u64 = headers
+        .get("x-ratelimit-reset")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.parse().ok())?;
+    let now = std::time::SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .ok()?
+        .as_secs();
+    reset_timestamp.checked_sub(now)
 }
 
 fn retry_after(headers: &HeaderMap) -> Option<u64> {
-    if let Some(retry_after_header) = headers.get("retry-after") {
-        if let Ok(retry_after) = retry_after_header.to_str() {
-            if let Ok(retry_after_seconds) = retry_after.parse::<u64>() {
-                return Some(retry_after_seconds);
-            }
-        }
-    }
-    None
+    headers
+        .get("retry-after")
+        .and_then(|v| v.to_str().ok())
+        .and_then(|s| s.parse().ok())
 }
 
 async fn fetch_all_pages<T: DeserializeOwned>(
     client: &Client,
     initial_url: &str,
 ) -> Result<SearchResult<T>, anyhow::Error> {
-    debug!("Fetch all pages for {initial_url}");
+    debug!("Fetching all pages for {initial_url}");
     let mut total_count = 0;
     let mut all_items = Vec::new();
     let mut next_url = Some(Url::parse(initial_url)?);
 
     while let Some(url) = next_url.take() {
-        debug!("Call {}", url.as_str());
-        let response = make_github_request(&client, url.as_str()).await?;
-        if response.status().is_success() {
-            let headers = response.headers().clone();
-            debug!("Headers {:?}", headers);
-            let result: SearchResult<T> = response.json().await?;
+        let response = make_github_request(client, url.as_str()).await?;
+        let headers = response.headers().clone();
+        let result: SearchResult<T> = response.json().await?;
 
-            if result.incomplete_results {
-                return Err(anyhow!("Fetch was incomplete"));
-            }
-
-            debug!("Total Count {}", result.total_count);
-            debug!("Count {}", result.items.len());
-            if total_count <= result.total_count {
-                total_count = result.total_count;
-            }
-            all_items.extend(result.items);
-            next_url = parse_next_url(&headers)?;
-            debug!("Next {:?}", next_url);
-        } else {
-            return Err(anyhow!("Failed to fetch data: {}", response.status()));
+        if result.incomplete_results {
+            return Err(anyhow!("Incomplete results from GitHub search API"));
         }
+
+        total_count = total_count.max(result.total_count);
+        all_items.extend(result.items);
+        next_url = parse_next_url(&headers)?;
     }
 
     Ok(SearchResult {
@@ -221,38 +169,49 @@ async fn fetch_all_pages<T: DeserializeOwned>(
 
 fn parse_next_url(headers: &HeaderMap) -> Result<Option<Url>, anyhow::Error> {
     if let Some(link_header) = headers.get(LINK) {
-        let link_str = link_header.to_str()?;
-        let links = parse_link_header(link_str)?;
-        debug!("Links {:?}", links);
+        let links = parse_link_header(link_header.to_str()?);
         if let Some(next) = links.get("next") {
             return Ok(Some(next.clone()));
         }
     }
-
     Ok(None)
 }
 
-fn parse_link_header(header: &str) -> Result<HashMap<String, Url>, anyhow::Error> {
+fn parse_link_header(header: &str) -> HashMap<String, Url> {
     let mut links = HashMap::new();
+
     for link in header.split(',') {
-        let parts: Vec<&str> = link.split(';').collect();
-        if parts.len() == 2 {
-            if let Ok(url) = Url::parse(parts[0].replace("<", "").replace(">", "").trim()) {
-                if let Some(rel) = parts[1].split('=').nth(1) {
-                    let rel = rel.trim_matches('"').trim();
-                    links.insert(rel.to_string(), url);
+        let link = link.trim();
+        let mut parts = link.splitn(2, ';');
+        let url_part = match parts.next() {
+            Some(u) => u.trim(),
+            None => continue,
+        };
+        let attrs = parts.next().unwrap_or("");
+        let url_str = url_part
+            .trim_start_matches('<')
+            .trim_end_matches('>')
+            .trim();
+
+        match Url::parse(url_str) {
+            Ok(url) => {
+                for attr in attrs.split(';') {
+                    if let Some(rel_val) = attr.trim().strip_prefix("rel=") {
+                        let rel = rel_val.trim().trim_matches('"').trim();
+                        if !rel.is_empty() {
+                            links.insert(rel.to_string(), url.clone());
+                        }
+                        break;
+                    }
                 }
-            } else {
-                return Err(anyhow!("Failed to parse link in link header: {}", parts[0]));
             }
-        } else {
-            return Err(anyhow!(
-                "Link in link header as more than two parts: {:?}",
-                parts
-            ));
+            Err(err) => {
+                debug!("Skipping malformed URL in Link header '{url_str}': {err}");
+            }
         }
     }
-    Ok(links)
+
+    links
 }
 
 impl Stats {
@@ -260,6 +219,7 @@ impl Stats {
         github_user: &str,
         github_token: &str,
         ignored_repos: &str,
+        exclude_forks: bool,
     ) -> Result<Self, anyhow::Error> {
         let mut headers = HeaderMap::new();
         headers.insert(
@@ -274,18 +234,18 @@ impl Stats {
             HeaderName::from_static("x-github-api-version"),
             HeaderValue::from_static("2022-11-28"),
         );
-        headers.insert(USER_AGENT, HeaderValue::from_str(&github_user)?);
+        headers.insert(USER_AGENT, HeaderValue::from_str(github_user)?);
 
         let client = Client::builder()
             .default_headers(headers)
-            .connection_verbose(true)
-            .http1_title_case_headers()
+            .timeout(Duration::from_secs(REQUEST_TIMEOUT_SECS))
             .build()?;
 
+        let fork_filter = if exclude_forks { "+fork:false" } else { "" };
         let repo_result: SearchResult<Repository> = fetch_all_pages(
             &client,
             &format!(
-                "https://api.github.com/search/repositories?q=user:{github_user}&per_page=100"
+                "https://api.github.com/search/repositories?q=user:{github_user}{fork_filter}&per_page=100"
             ),
         )
         .await?;
@@ -293,10 +253,10 @@ impl Stats {
         let total_stars = repo_result
             .items
             .iter()
-            .map(|repo| repo.stargazers_count)
+            .map(|r| r.stargazers_count)
             .sum();
 
-        let commit_result: SearchResult<Commit> = make_github_request(
+        let commit_count: CommitCount = make_github_request(
             &client,
             &format!("https://api.github.com/search/commits?q=author:{github_user}"),
         )
@@ -304,82 +264,110 @@ impl Stats {
         .json()
         .await?;
 
-        let total_commits = commit_result.total_count;
-
-        let ignored_repos_list: Vec<String> = ignored_repos
+        let ignored: Vec<String> = ignored_repos
             .split(',')
             .map(|s| s.trim().to_lowercase())
             .filter(|s| !s.is_empty())
             .collect();
 
         let mut languages: HashMap<String, Language> = HashMap::new();
-        let colors: HashMap<String, String> = crate::language_colors::colors();
-        for repo in repo_result.items.iter().filter(|r| {
-            let repo_name = r.full_name.to_lowercase();
-            !ignored_repos_list
-                .iter()
-                .any(|ignored| repo_name == *ignored)
-        }) {
+        let colors = crate::language_colors::colors();
+
+        for repo in repo_result
+            .items
+            .iter()
+            .filter(|r| !ignored.contains(&r.full_name.to_lowercase()))
+        {
             let langs: HashMap<String, f64> = make_github_request(&client, &repo.languages_url)
                 .await?
                 .json()
                 .await?;
 
-            for lang in langs.iter() {
-                if languages.contains_key(lang.0) {
-                    let existing: &Language = languages.get(lang.0).unwrap();
-                    languages.insert(
-                        lang.0.clone(),
-                        Language {
-                            color: existing.color.clone(),
-                            name: existing.name.clone(),
-                            size: existing.size + lang.1,
-                        },
-                    );
-                    continue;
-                }
-
-                let default = String::from("#FBFF00");
-                let color = colors.get(&lang.0.clone()).unwrap_or(&default);
-
-                let language = Language {
-                    color: color.clone(),
-                    name: lang.0.clone(),
-                    size: lang.1.clone(),
-                };
-
-                languages.insert(lang.0.clone(), language);
+            for (name, &size) in &langs {
+                let color = colors
+                    .get(name)
+                    .cloned()
+                    .unwrap_or_else(|| String::from("#FBFF00"));
+                languages
+                    .entry(name.clone())
+                    .and_modify(|e| e.size += size)
+                    .or_insert(Language {
+                        color,
+                        name: name.clone(),
+                        size,
+                    });
             }
         }
 
-        let stats = Stats {
+        Ok(Stats {
             total_stars,
-            total_commits,
+            total_commits: commit_count.total_count,
             languages,
-        };
-
-        debug!("{:#?}", stats);
-        Ok(stats)
+        })
     }
 }
 
-pub async fn request_stats(
-    github_user: &str,
-    github_token: &str,
-    ignored_repos: &str,
-) -> Result<Stats, anyhow::Error> {
-    match Stats::request(github_user, github_token, ignored_repos).await {
-        Ok(stats) => Ok(stats),
-        Err(err) => {
-            error!("{err}");
-            Err(err)
-        }
-    }
-}
+#[cfg(test)]
+mod tests {
+    use super::*;
 
-#[allow(dead_code)]
-pub async fn test(github_user: &str, github_token: &str) {
-    let _ = request_stats(&github_user, &github_token, "")
-        .await
-        .unwrap();
+    #[test]
+    fn parse_link_header_basic() {
+        let header = r#"<https://api.github.com/search/repositories?page=2>; rel="next", <https://api.github.com/search/repositories?page=5>; rel="last""#;
+        let links = parse_link_header(header);
+        assert_eq!(links.len(), 2);
+        assert!(links.contains_key("next"));
+        assert!(links.contains_key("last"));
+    }
+
+    #[test]
+    fn parse_link_header_extra_attributes() {
+        let header =
+            r#"<https://api.github.com/search/repositories?page=2>; rel="next"; type="text/html""#;
+        let links = parse_link_header(header);
+        assert_eq!(links.len(), 1);
+        assert!(links.contains_key("next"));
+    }
+
+    #[test]
+    fn parse_link_header_malformed_url_is_skipped() {
+        let links = parse_link_header(r#"<not a url>; rel="next""#);
+        assert!(links.is_empty());
+    }
+
+    #[test]
+    fn parse_link_header_empty() {
+        assert!(parse_link_header("").is_empty());
+    }
+
+    #[test]
+    fn ratelimit_remaining_parses() {
+        let mut headers = HeaderMap::new();
+        headers.insert("x-ratelimit-remaining", HeaderValue::from_static("42"));
+        assert_eq!(ratelimit_remaining(&headers), Some(42));
+    }
+
+    #[test]
+    fn ratelimit_remaining_missing_returns_none() {
+        assert_eq!(ratelimit_remaining(&HeaderMap::new()), None);
+    }
+
+    #[test]
+    fn ratelimit_remaining_non_numeric_returns_none() {
+        let mut headers = HeaderMap::new();
+        headers.insert("x-ratelimit-remaining", HeaderValue::from_static("abc"));
+        assert_eq!(ratelimit_remaining(&headers), None);
+    }
+
+    #[test]
+    fn retry_after_parses() {
+        let mut headers = HeaderMap::new();
+        headers.insert("retry-after", HeaderValue::from_static("60"));
+        assert_eq!(retry_after(&headers), Some(60));
+    }
+
+    #[test]
+    fn retry_after_missing_returns_none() {
+        assert_eq!(retry_after(&HeaderMap::new()), None);
+    }
 }

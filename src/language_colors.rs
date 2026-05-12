@@ -1,6 +1,10 @@
 use std::collections::HashMap;
+use std::sync::OnceLock;
 
-pub fn colors() -> HashMap<String, String> {
+static COLORS: OnceLock<HashMap<String, String>> = OnceLock::new();
+
+pub fn colors() -> &'static HashMap<String, String> {
+    COLORS.get_or_init(|| {
     let mut lang_colors: HashMap<&str, &str> = HashMap::new();
     lang_colors.insert("1C Enterprise", "#814CCC");
     lang_colors.insert("2-Dimensional Array", "#38761D");
@@ -601,4 +605,5 @@ pub fn colors() -> HashMap<String, String> {
         .into_iter()
         .map(|(k, v)| (k.to_string(), v.to_string()))
         .collect()
+    })
 }

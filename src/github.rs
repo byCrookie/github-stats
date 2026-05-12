@@ -2,7 +2,7 @@ use std::collections::HashMap;
 use std::time::{Duration, UNIX_EPOCH};
 
 use anyhow::anyhow;
-use log::debug;
+use log::{debug, warn};
 use reqwest::header::{
     HeaderMap, HeaderName, HeaderValue, ACCEPT, AUTHORIZATION, LINK, USER_AGENT,
 };
@@ -56,53 +56,76 @@ async fn make_github_request(
     let mut backoff = INITIAL_BACKOFF;
 
     loop {
-        let response = client.get(url).send().await;
-
-        match response {
-            Ok(resp) => {
-                let headers = resp.headers().clone();
-                if resp.status() == reqwest::StatusCode::OK {
-                    if let Some(rate_limit) = ratelimit_remaining(&headers) {
-                        if rate_limit == 0 {
-                            if let Some(reset_secs) = ratelimit_reset(&headers) {
-                                debug!("Rate limit exhausted, sleeping {reset_secs}s");
-                                sleep(Duration::from_secs(reset_secs)).await;
-                                continue;
-                            }
-                        }
-                    }
-                }
-
-                if let Some(retry_after) = retry_after(&headers) {
-                    debug!("Secondary rate limit, sleeping {retry_after}s");
-                    sleep(Duration::from_secs(retry_after)).await;
+        let response = match client.get(url).send().await {
+            Ok(resp) => resp,
+            Err(err) => {
+                // Retry transient network errors (connect / timeout); fail fast on others.
+                if retries < MAX_RETRIES && (err.is_connect() || err.is_timeout()) {
+                    debug!("Transient network error (attempt {}): {}", retries + 1, err);
+                    retries += 1;
+                    sleep(Duration::from_secs(backoff)).await;
+                    backoff *= 2;
                     continue;
                 }
-
-                let retry_codes = [
-                    reqwest::StatusCode::REQUEST_TIMEOUT,
-                    reqwest::StatusCode::TOO_MANY_REQUESTS,
-                    reqwest::StatusCode::INTERNAL_SERVER_ERROR,
-                    reqwest::StatusCode::BAD_GATEWAY,
-                    reqwest::StatusCode::SERVICE_UNAVAILABLE,
-                    reqwest::StatusCode::GATEWAY_TIMEOUT,
-                ];
-
-                if resp.status().is_success() {
-                    return Ok(resp);
-                } else if retry_codes.contains(&resp.status()) {
-                    debug!("Request failed with status: {}. Retrying...", resp.status());
-                } else {
-                    return Err(anyhow!("Request failed with status: {}.", resp.status()));
-                }
-            }
-            Err(err) => {
                 return Err(anyhow!("Failed to send request: {err}"));
             }
+        };
+
+        let headers = response.headers().clone();
+        let status = response.status();
+
+        // Secondary rate limit: GitHub sends a Retry-After header.
+        if let Some(secs) = retry_after(&headers) {
+            if retries < MAX_RETRIES {
+                debug!("Secondary rate limit, sleeping {}s", secs);
+                sleep(Duration::from_secs(secs)).await;
+                retries += 1;
+                continue;
+            }
+            return Err(anyhow!(
+                "Secondary rate limit persists after {MAX_RETRIES} retries"
+            ));
         }
 
-        if retries >= MAX_RETRIES {
-            return Err(anyhow!("Max retries of {MAX_RETRIES} reached"));
+        // Primary rate limit: 403 with x-ratelimit-remaining: 0.
+        if status == reqwest::StatusCode::FORBIDDEN {
+            if ratelimit_remaining(&headers) == Some(0) {
+                if let Some(reset_secs) = ratelimit_reset(&headers) {
+                    if retries < MAX_RETRIES {
+                        debug!(
+                            "Primary rate limit exhausted, sleeping {}s until reset",
+                            reset_secs
+                        );
+                        sleep(Duration::from_secs(reset_secs)).await;
+                        retries += 1;
+                        continue;
+                    }
+                }
+            }
+            return Err(anyhow!("Request forbidden (403)"));
+        }
+
+        if status.is_success() {
+            return Ok(response);
+        }
+
+        let retry_codes = [
+            reqwest::StatusCode::REQUEST_TIMEOUT,
+            reqwest::StatusCode::TOO_MANY_REQUESTS,
+            reqwest::StatusCode::INTERNAL_SERVER_ERROR,
+            reqwest::StatusCode::BAD_GATEWAY,
+            reqwest::StatusCode::SERVICE_UNAVAILABLE,
+            reqwest::StatusCode::GATEWAY_TIMEOUT,
+        ];
+
+        if retry_codes.contains(&status) && retries < MAX_RETRIES {
+            debug!("Request failed with status: {}. Retrying...", status);
+        } else if retry_codes.contains(&status) {
+            return Err(anyhow!(
+                "Max retries of {MAX_RETRIES} reached, last status: {status}"
+            ));
+        } else {
+            return Err(anyhow!("Request failed with status: {status}"));
         }
 
         retries += 1;
@@ -152,7 +175,10 @@ async fn fetch_all_pages<T: DeserializeOwned>(
         let result: SearchResult<T> = response.json().await?;
 
         if result.incomplete_results {
-            return Err(anyhow!("Incomplete results from GitHub search API"));
+            warn!(
+                "GitHub search API returned incomplete results for {}; using partial data",
+                url
+            );
         }
 
         total_count = total_count.max(result.total_count);

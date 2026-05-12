@@ -1,3 +1,5 @@
+use log::warn;
+
 pub struct Theme {
     pub title_color: String,
     pub icon_color: String,
@@ -29,8 +31,12 @@ pub fn light() -> Theme {
 /// Returns the theme matching `name`, falling back to dark for unknown names.
 pub fn from_name(name: &str) -> Theme {
     match name {
+        "dark" => dark(),
         "light" => light(),
-        _ => dark(),
+        _ => {
+            warn!("Unknown theme '{}', falling back to dark", name);
+            dark()
+        }
     }
 }
 

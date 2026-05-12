@@ -196,7 +196,7 @@ impl CardQuery {
     }
 
     fn lang_count(&self) -> usize {
-        self.lang_count.map(|c| c.clamp(1, 100)).unwrap_or(40)
+        self.lang_count.map(|c| c.clamp(1, 100)).unwrap_or(10)
     }
 }
 
@@ -418,14 +418,21 @@ fn cache_status(path: &Path, max_age_secs: u32) -> CacheStatus {
 
 #[get("/health")]
 async fn health_endpoint(config: Data<Config>) -> impl Responder {
-    let health = HealthResponse {
-        status: "healthy",
-        cache: cache_status(&stats_cache_path(&config.cache_path), config.cache_seconds),
+    let cache = cache_status(&stats_cache_path(&config.cache_path), config.cache_seconds);
+    let (http_status, status_text) = if cache.fresh {
+        (StatusCode::OK, "healthy")
+    } else {
+        (StatusCode::SERVICE_UNAVAILABLE, "degraded")
     };
-    match serde_json::to_string(&health) {
-        Ok(json) => json_response(json),
-        Err(_) => HttpResponse::Ok().body(r#"{"status":"healthy"}"#),
-    }
+    let health = HealthResponse {
+        status: status_text,
+        cache,
+    };
+    let json = serde_json::to_string(&health).expect("HealthResponse is always serializable");
+    HttpResponse::build(http_status)
+        .insert_header(header::ContentType(mime::APPLICATION_JSON))
+        .insert_header(("X-Content-Type-Options", "nosniff"))
+        .body(json)
 }
 
 #[get("/favicon.ico")]

@@ -1,5 +1,14 @@
 use crate::themes::Theme;
 
+/// Escapes characters that are special in XML/SVG text content and attribute values.
+pub(crate) fn xml_escape(s: &str) -> String {
+    s.replace('&', "&amp;")
+        .replace('<', "&lt;")
+        .replace('>', "&gt;")
+        .replace('"', "&quot;")
+        .replace('\'', "&#39;")
+}
+
 pub struct Part {
     pub height: f64,
     pub content: String,
@@ -59,6 +68,7 @@ pub fn render_error_card(message: &str, width: f64, theme: &Theme) -> String {
     let border_color = &theme.border_color;
     let text_color = &theme.text_color;
     let height: f64 = 80.0;
+    let message = xml_escape(message);
     format!(
         r#"
 <svg width='{width}' height='{height}' viewBox='0 0 {width} {height}' xmlns='http://www.w3.org/2000/svg'>
@@ -121,5 +131,22 @@ mod tests {
         let svg = render_error_card("Err", 300.0, &theme);
         assert!(svg.contains(&theme.background_color));
         assert!(svg.contains(&theme.border_color));
+    }
+
+    #[test]
+    fn render_error_card_escapes_message() {
+        let theme = themes::dark();
+        let svg = render_error_card("<script>alert(1)</script>", 300.0, &theme);
+        assert!(!svg.contains("<script>"));
+        assert!(svg.contains("&lt;script&gt;"));
+    }
+
+    #[test]
+    fn xml_escape_special_chars() {
+        assert_eq!(xml_escape("Rust"), "Rust");
+        assert_eq!(xml_escape("<script>"), "&lt;script&gt;");
+        assert_eq!(xml_escape("a & b"), "a &amp; b");
+        assert_eq!(xml_escape("\"quoted\""), "&quot;quoted&quot;");
+        assert_eq!(xml_escape("it's"), "it&#39;s");
     }
 }

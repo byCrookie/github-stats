@@ -1,17 +1,8 @@
 use std::collections::HashMap;
 
-use crate::card::Part;
+use crate::card::{xml_escape, Part};
 use crate::github::Language;
 use crate::themes::Theme;
-
-/// Escapes characters that are special in XML/SVG text content and attribute values.
-fn xml_escape(s: &str) -> String {
-    s.replace('&', "&amp;")
-        .replace('<', "&lt;")
-        .replace('>', "&gt;")
-        .replace('"', "&quot;")
-        .replace('\'', "&#39;")
-}
 
 /// Computes the total rendered height of the top-languages section.
 ///
@@ -37,26 +28,24 @@ fn select_top_languages(
     (langs, total_languages_size)
 }
 
-fn flex_layout(items: Vec<String>, gap: f64, columns: u64) -> String {
+fn flex_layout(items: Vec<String>, gap: f64, columns: u64, card_width: f64) -> String {
     let mut layout = String::new();
-    let translate = |i: usize, gap: f64| format!("translate(0, {})", i as f64 * gap);
 
     if columns == 1 {
         for (i, item) in items.iter().enumerate() {
             layout.push_str(&format!(
-                r#"<g transform="{}">{}</g>"#,
-                translate(i, gap),
+                r#"<g transform="translate(0, {})">{}</g>"#,
+                i as f64 * gap,
                 item
             ));
         }
     } else {
-        let half = (items.len() as f64 / columns as f64).ceil();
+        let half = ((items.len() as f64 / columns as f64).ceil()) as usize;
         for (i, item) in items.iter().enumerate() {
-            let ii = i as f64;
-            let (x, y) = if ii < half {
-                (0, ii * gap)
+            let (x, y) = if i < half {
+                (0.0_f64, i as f64 * gap)
             } else {
-                (150, (ii - half) * gap)
+                (card_width / 2.0, (i - half) as f64 * gap)
             };
             layout.push_str(&format!(
                 r#"<g transform="translate({}, {})">{}</g>"#,
@@ -75,15 +64,14 @@ fn render_percent_bar(
     total_language_size: f64,
 ) -> String {
     let width_without_offset: f64 = width - 2.0 * x_offset;
+    let mut progress_bar = String::new();
     let mut progress_offset: f64 = 0.0;
 
-    let progress_bar = langs
-        .iter()
-        .map(|lang| {
-            let lang_color = &lang.color;
-            let percentage = ((lang.size / total_language_size) * width_without_offset).round();
-            let output = format!(
-                r#"<rect
+    for lang in langs {
+        let lang_color = &lang.color;
+        let percentage = ((lang.size / total_language_size) * width_without_offset).round();
+        progress_bar.push_str(&format!(
+            r#"<rect
                     mask="url(#rect-mask)"
                     x="{progress_offset}"
                     y="0"
@@ -92,12 +80,9 @@ fn render_percent_bar(
                     fill="{lang_color}"
                     class="lang-progress"
                 />"#
-            );
-            progress_offset += percentage;
-            output
-        })
-        .collect::<Vec<String>>()
-        .join("");
+        ));
+        progress_offset += percentage;
+    }
 
     let mask = format!(
         r#"
@@ -115,6 +100,7 @@ fn render_normal_layout(
     total_language_size: f64,
     gap: f64,
     columns: u64,
+    card_width: f64,
 ) -> String {
     let mut items = vec![];
 
@@ -134,7 +120,7 @@ fn render_normal_layout(
         ));
     }
 
-    flex_layout(items, gap, columns)
+    flex_layout(items, gap, columns, card_width)
 }
 
 pub fn render_top_languages(
@@ -213,7 +199,7 @@ pub fn render_top_languages(
     svg.push_str(&format!(
         r#"<g transform="translate(0, {})">{}</g>"#,
         gap,
-        render_normal_layout(langs, total_language_size, gap, columns)
+        render_normal_layout(langs, total_language_size, gap, columns, card_width)
     ));
     svg.push_str("\n</svg>");
 
@@ -310,13 +296,12 @@ mod tests {
     }
 
     #[test]
-    fn xml_escape_special_chars() {
-        assert_eq!(xml_escape("Rust"), "Rust");
-        assert_eq!(xml_escape("C++"), "C++");
-        assert_eq!(xml_escape("<script>"), "&lt;script&gt;");
-        assert_eq!(xml_escape("a & b"), "a &amp; b");
-        assert_eq!(xml_escape("\"quoted\""), "&quot;quoted&quot;");
-        assert_eq!(xml_escape("it's"), "it&#39;s");
+    fn flex_layout_two_columns_uses_dynamic_offset() {
+        // With card_width=300, the second column should start at 150, not a hardcoded value.
+        let items: Vec<String> = (0..6).map(|i| format!("<t>{i}</t>")).collect();
+        let layout = flex_layout(items, 25.0, 2, 300.0);
+        assert!(layout.contains("translate(150, "));
+        assert!(!layout.contains("translate(200, "));
     }
 
     #[test]

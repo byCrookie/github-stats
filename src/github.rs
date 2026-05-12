@@ -276,11 +276,7 @@ impl Stats {
         )
         .await?;
 
-        let total_stars = repo_result
-            .items
-            .iter()
-            .map(|r| r.stargazers_count)
-            .sum();
+        let total_stars = repo_result.items.iter().map(|r| r.stargazers_count).sum();
 
         let commit_count: CommitCount = make_github_request(
             &client,

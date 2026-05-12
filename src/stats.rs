@@ -31,8 +31,13 @@ pub fn render_stats(
 
     let stars_text_node =
         create_text_node(&icon_star(), "Total Stars", total_stars, 0, content_width);
-    let commits_text_node =
-        create_text_node(&icon_commits(), "Total Commits", total_commits, 1, content_width);
+    let commits_text_node = create_text_node(
+        &icon_commits(),
+        "Total Commits",
+        total_commits,
+        1,
+        content_width,
+    );
 
     let css_styles = format!(
         r#"
@@ -74,16 +79,13 @@ pub fn render_stats(
 </svg>"#
     );
 
-    Part { height, content: svg }
+    Part {
+        height,
+        content: svg,
+    }
 }
 
-fn create_text_node(
-    icon: &str,
-    label: &str,
-    value: u32,
-    index: u64,
-    content_width: f64,
-) -> String {
+fn create_text_node(icon: &str, label: &str, value: u32, index: u64, content_width: f64) -> String {
     // Vertical center of the row in the coordinate space where rows start at y=0.
     let y_center = ROW_HEIGHT / 2.0 + index as f64 * (ROW_HEIGHT + ROW_GAP);
     // Icon is 16 px tall; translate its group so the icon is centered in the row.

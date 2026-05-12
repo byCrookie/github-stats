@@ -9,10 +9,10 @@ use actix_files::NamedFile;
 use actix_governor::{Governor, GovernorConfigBuilder};
 use actix_web::http::{Method, StatusCode};
 use actix_web::{
-    get, post,
+    get,
     http::header::{self, CacheControl, CacheDirective},
     middleware::Logger,
-    web,
+    post, web,
     web::Data,
     App, Either, HttpResponse, HttpServer, Responder,
 };
@@ -64,7 +64,11 @@ impl std::fmt::Debug for Config {
             .field("exclude_forks", &self.exclude_forks)
             .field(
                 "refresh_token",
-                if self.refresh_token.is_empty() { &"(not set)" } else { &"[REDACTED]" },
+                if self.refresh_token.is_empty() {
+                    &"(not set)"
+                } else {
+                    &"[REDACTED]"
+                },
             )
             .finish()
     }
@@ -226,10 +230,7 @@ async fn root_endpoint(config: Data<Config>) -> Result<HttpResponse, Error> {
 }
 
 #[get("/stats")]
-async fn stats_endpoint(
-    config: Data<Config>,
-    query: web::Query<CardQuery>,
-) -> impl Responder {
+async fn stats_endpoint(config: Data<Config>, query: web::Query<CardQuery>) -> impl Responder {
     match build_stats_svg(&config, &query).await {
         Ok(svg) => svg_response(svg, config.cache_seconds),
         Err(err) => {
@@ -248,8 +249,12 @@ async fn build_stats_svg(config: &Config, query: &CardQuery) -> Result<String, a
     let gap = 30.0_f64;
     let content_width = width - 2.0 * x_offset;
 
-    let rendered_stats =
-        stats::render_stats(&theme, card_stats.total_stars, card_stats.total_commits, content_width);
+    let rendered_stats = stats::render_stats(
+        &theme,
+        card_stats.total_stars,
+        card_stats.total_commits,
+        content_width,
+    );
 
     Ok(card::render_card(
         vec![rendered_stats],
@@ -263,10 +268,7 @@ async fn build_stats_svg(config: &Config, query: &CardQuery) -> Result<String, a
 }
 
 #[get("/combined")]
-async fn combined_endpoint(
-    config: Data<Config>,
-    query: web::Query<CardQuery>,
-) -> impl Responder {
+async fn combined_endpoint(config: Data<Config>, query: web::Query<CardQuery>) -> impl Responder {
     match build_combined_svg(&config, &query).await {
         Ok(svg) => svg_response(svg, config.cache_seconds),
         Err(err) => {
@@ -285,8 +287,12 @@ async fn build_combined_svg(config: &Config, query: &CardQuery) -> Result<String
     let gap = 30.0_f64;
     let content_width = width - 2.0 * x_offset;
 
-    let rendered_stats =
-        stats::render_stats(&theme, card_stats.total_stars, card_stats.total_commits, content_width);
+    let rendered_stats = stats::render_stats(
+        &theme,
+        card_stats.total_stars,
+        card_stats.total_commits,
+        content_width,
+    );
     let rendered_langs = toplangs::render_top_languages(
         &theme,
         x_offset,
@@ -307,10 +313,7 @@ async fn build_combined_svg(config: &Config, query: &CardQuery) -> Result<String
 }
 
 #[get("/languages")]
-async fn languages_endpoint(
-    config: Data<Config>,
-    query: web::Query<CardQuery>,
-) -> impl Responder {
+async fn languages_endpoint(config: Data<Config>, query: web::Query<CardQuery>) -> impl Responder {
     match build_languages_svg(&config, &query).await {
         Ok(svg) => svg_response(svg, config.cache_seconds),
         Err(err) => {
@@ -320,10 +323,7 @@ async fn languages_endpoint(
     }
 }
 
-async fn build_languages_svg(
-    config: &Config,
-    query: &CardQuery,
-) -> Result<String, anyhow::Error> {
+async fn build_languages_svg(config: &Config, query: &CardQuery) -> Result<String, anyhow::Error> {
     let card_stats = fetch_stats(config).await?;
     let theme = query.theme();
     let width = query.width();
@@ -401,7 +401,11 @@ struct CacheStatus {
 
 fn cache_status(path: &Path, max_age_secs: u32) -> CacheStatus {
     if !path.exists() {
-        return CacheStatus { exists: false, age_seconds: None, fresh: false };
+        return CacheStatus {
+            exists: false,
+            age_seconds: None,
+            fresh: false,
+        };
     }
     if let Ok(metadata) = fs::metadata(path) {
         if let Ok(modified) = metadata.modified() {
@@ -415,7 +419,11 @@ fn cache_status(path: &Path, max_age_secs: u32) -> CacheStatus {
             }
         }
     }
-    CacheStatus { exists: true, age_seconds: None, fresh: false }
+    CacheStatus {
+        exists: true,
+        age_seconds: None,
+        fresh: false,
+    }
 }
 
 #[get("/health")]

@@ -32,7 +32,7 @@ pub fn render_card(
         + parts.iter().map(|p| p.height).sum::<f64>()
         + y_offset              // top padding (card edge → title cap-top)
         + TITLE_SECTION_HEIGHT
-        + y_offset;             // bottom padding (symmetric with top)
+        + y_offset; // bottom padding (symmetric with top)
     let title_color = &theme.title_color;
     let background_color = &theme.background_color;
     let border_color = &theme.border_color;

@@ -7,11 +7,11 @@ use crate::themes::Theme;
 /// Computes the total rendered height of the top-languages section.
 ///
 /// The section consists of:
-/// - an 8 px progress bar
+/// - a 10 px progress bar
 /// - `gap` px of spacing before the language list
 /// - `ceil(langs / columns)` rows each `gap` px tall
 fn calculate_height(langs: usize, gap: f64, columns: u64) -> f64 {
-    const BAR_HEIGHT: f64 = 8.0;
+    const BAR_HEIGHT: f64 = 10.0;
     let rows = (langs as f64 / columns as f64).ceil();
     BAR_HEIGHT + gap + rows * gap
 }
@@ -69,14 +69,15 @@ fn render_percent_bar(
 
     for lang in langs {
         let lang_color = &lang.color;
-        let percentage = ((lang.size / total_language_size) * width_without_offset).round();
+        // Accumulate without rounding to avoid pixel gaps between segments.
+        let percentage = (lang.size / total_language_size) * width_without_offset;
         progress_bar.push_str(&format!(
             r#"<rect
                     mask="url(#rect-mask)"
-                    x="{progress_offset}"
+                    x="{progress_offset:.2}"
                     y="0"
-                    width="{percentage}"
-                    height="8"
+                    width="{percentage:.2}"
+                    height="10"
                     fill="{lang_color}"
                     class="lang-progress"
                 />"#
@@ -87,12 +88,12 @@ fn render_percent_bar(
     let mask = format!(
         r#"
 <mask id="rect-mask">
-    <rect width="{width_without_offset}px" height="8" fill="white" rx="5"/>
+    <rect width="{width_without_offset:.2}px" height="10" fill="white" rx="5"/>
 </mask>
     "#
     );
 
-    format!(r#"<svg width="{width_without_offset}px">{mask}{progress_bar}</svg>"#)
+    format!(r#"<svg width="{width_without_offset:.2}px">{mask}{progress_bar}</svg>"#)
 }
 
 fn render_normal_layout(
@@ -111,7 +112,7 @@ fn render_normal_layout(
         items.push(format!(
             r#"<g class="stagger" style="animation-delay: {}ms">
                 <circle cx="5" cy="6" r="5" fill="{}" />
-                <text x="15" y="10" class='lang-name'>{} {:.2}%</text>
+                <text x="15" y="10" class='lang-name'><tspan>{}</tspan><tspan class='lang-percent'> {:.2}%</tspan></text>
             </g>"#,
             (index + 3) * 150 / 2,
             color,
@@ -174,8 +175,11 @@ pub fn render_top_languages(
                 }}
                 .bold {{ font-weight: 700; }}
                 .lang-name {{
-                    font: 400 11px "Segoe UI", Ubuntu, Sans-Serif;
+                    font: 500 11px "Segoe UI", Ubuntu, Arial, sans-serif;
                     fill: {text_color};
+                }}
+                .lang-percent {{
+                    fill-opacity: 0.7;
                 }}
                 .stagger {{
                     opacity: 0;
@@ -223,20 +227,20 @@ mod tests {
 
     #[test]
     fn calculate_height_single_column() {
-        // 3 langs, 1 column, gap=25: 8 + 25 + 3*25 = 108
-        assert_eq!(calculate_height(3, 25.0, 1), 8.0 + 25.0 + 3.0 * 25.0);
+        // 3 langs, 1 column, gap=25: 10 + 25 + 3*25 = 110
+        assert_eq!(calculate_height(3, 25.0, 1), 10.0 + 25.0 + 3.0 * 25.0);
     }
 
     #[test]
     fn calculate_height_two_columns() {
-        // 6 langs, 2 columns → 3 rows: 8 + 25 + 3*25 = 108
-        assert_eq!(calculate_height(6, 25.0, 2), 8.0 + 25.0 + 3.0 * 25.0);
+        // 6 langs, 2 columns → 3 rows: 10 + 25 + 3*25 = 110
+        assert_eq!(calculate_height(6, 25.0, 2), 10.0 + 25.0 + 3.0 * 25.0);
     }
 
     #[test]
     fn calculate_height_odd_two_columns() {
-        // 5 langs, 2 columns → ceil(5/2)=3 rows: 8 + 25 + 3*25 = 108
-        assert_eq!(calculate_height(5, 25.0, 2), 8.0 + 25.0 + 3.0 * 25.0);
+        // 5 langs, 2 columns → ceil(5/2)=3 rows: 10 + 25 + 3*25 = 110
+        assert_eq!(calculate_height(5, 25.0, 2), 10.0 + 25.0 + 3.0 * 25.0);
     }
 
     #[test]

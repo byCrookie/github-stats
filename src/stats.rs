@@ -4,6 +4,9 @@ use crate::{
     themes::Theme,
 };
 
+const ROW_HEIGHT: f64 = 20.0;
+const ROW_GAP: f64 = 5.0;
+
 fn format_number(num: u32) -> String {
     if num < 1000 {
         num.to_string()
@@ -14,23 +17,36 @@ fn format_number(num: u32) -> String {
     }
 }
 
-pub fn render_stats(theme: &Theme, total_stars: u32, total_commits: u32) -> Part {
-    let stars_text_node: String = create_text_node(&icon_star(), "Total Stars", total_stars, 0);
-    let commits_text_node: String =
-        create_text_node(&icon_commits(), "Total Commits", total_commits, 1);
+pub fn render_stats(
+    theme: &Theme,
+    total_stars: u32,
+    total_commits: u32,
+    content_width: f64,
+) -> Part {
     let nodes: f64 = 2.0;
-    let height: f64 = nodes * 16.0;
+    let height: f64 = nodes * ROW_HEIGHT + (nodes - 1.0) * ROW_GAP;
     let text_color = &theme.text_color;
+    let title_color = &theme.title_color;
     let icon_color = &theme.icon_color;
+
+    let stars_text_node =
+        create_text_node(&icon_star(), "Total Stars", total_stars, 0, content_width);
+    let commits_text_node =
+        create_text_node(&icon_commits(), "Total Commits", total_commits, 1, content_width);
 
     let css_styles = format!(
         r#"
-.stat {{
-    font: 600 14px 'Segoe UI', Ubuntu, 'Helvetica Neue', Sans-Serif; fill: {text_color};
+.stat-label {{
+    font: 400 14px 'Segoe UI', Ubuntu, 'Helvetica Neue', Arial, sans-serif;
+    fill: {text_color};
+}}
+.stat-value {{
+    font: 600 14px 'Segoe UI', Ubuntu, 'Helvetica Neue', Arial, sans-serif;
+    fill: {title_color};
 }}
 @supports(-moz-appearance: auto) {{
     /* Selector detects Firefox */
-    .stat {{ font-size:12px; }}
+    .stat-label, .stat-value {{ font-size: 12px; }}
 }}
 .stagger {{
     opacity: 0;
@@ -49,37 +65,40 @@ pub fn render_stats(theme: &Theme, total_stars: u32, total_commits: u32) -> Part
     );
 
     let svg = format!(
-        r#"
-<svg xmlns='http://www.w3.org/2000/svg'>
+        r#"<svg xmlns='http://www.w3.org/2000/svg'>
     <style>
         {css_styles}
     </style>
     {stars_text_node}
     {commits_text_node}
-</svg>
-    "#
+</svg>"#
     );
 
-    Part {
-        height,
-        content: svg,
-    }
+    Part { height, content: svg }
 }
 
-fn create_text_node(icon: &str, label: &str, value: u32, index: u64) -> String {
-    let y_position = 25 * index;
+fn create_text_node(
+    icon: &str,
+    label: &str,
+    value: u32,
+    index: u64,
+    content_width: f64,
+) -> String {
+    // Vertical center of the row in the coordinate space where rows start at y=0.
+    let y_center = ROW_HEIGHT / 2.0 + index as f64 * (ROW_HEIGHT + ROW_GAP);
+    // Icon is 16 px tall; translate its group so the icon is centered in the row.
+    let icon_y = y_center - 8.0;
     let stagger_delay = (index + 3) * 150;
     let formatted_value = format_number(value);
+    // Text y=8 within the translated group lands at absolute y=icon_y+8=y_center.
     format!(
-        r#"
-<g class='stagger' style='animation-delay: {stagger_delay}ms' transform='translate(0, {y_position})'>
+        r#"<g class='stagger' style='animation-delay: {stagger_delay}ms' transform='translate(0, {icon_y})'>
     <svg class='icon' viewBox='0 0 16 16' version='1.1' width='16' height='16'>
         {icon}
     </svg>
-    <text class='stat' x='25' y='12.5'>{label}</text>
-    <text class='stat' x='140' y='12.5'>{formatted_value}</text>
-</g>
-    "#
+    <text class='stat-label' x='25' y='8' dominant-baseline='middle'>{label}</text>
+    <text class='stat-value' x='{content_width}' y='8' dominant-baseline='middle' text-anchor='end'>{formatted_value}</text>
+</g>"#
     )
 }
 
@@ -110,10 +129,26 @@ mod tests {
     #[test]
     fn render_stats_produces_svg() {
         let theme = crate::themes::dark();
-        let part = render_stats(&theme, 42, 1234);
+        let part = render_stats(&theme, 42, 1234, 250.0);
         assert!(part.content.contains("<svg"));
         assert!(part.content.contains("42"));
         assert!(part.content.contains("1.2k"));
         assert!(part.height > 0.0);
+    }
+
+    #[test]
+    fn render_stats_right_aligns_values() {
+        let theme = crate::themes::dark();
+        let part = render_stats(&theme, 10, 20, 250.0);
+        assert!(part.content.contains("text-anchor='end'"));
+        assert!(part.content.contains("x='250'"));
+    }
+
+    #[test]
+    fn render_stats_label_value_classes() {
+        let theme = crate::themes::dark();
+        let part = render_stats(&theme, 1, 2, 250.0);
+        assert!(part.content.contains("stat-label"));
+        assert!(part.content.contains("stat-value"));
     }
 }

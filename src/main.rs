@@ -244,11 +244,12 @@ async fn build_stats_svg(config: &Config, query: &CardQuery) -> Result<String, a
     let theme = query.theme();
     let width = query.width();
     let x_offset = 25.0_f64;
-    let y_offset = 35.0_f64;
+    let y_offset = 20.0_f64;
     let gap = 30.0_f64;
+    let content_width = width - 2.0 * x_offset;
 
     let rendered_stats =
-        stats::render_stats(&theme, card_stats.total_stars, card_stats.total_commits);
+        stats::render_stats(&theme, card_stats.total_stars, card_stats.total_commits, content_width);
 
     Ok(card::render_card(
         vec![rendered_stats],
@@ -280,11 +281,12 @@ async fn build_combined_svg(config: &Config, query: &CardQuery) -> Result<String
     let theme = query.theme();
     let width = query.width();
     let x_offset = 25.0_f64;
-    let y_offset = 35.0_f64;
+    let y_offset = 20.0_f64;
     let gap = 30.0_f64;
+    let content_width = width - 2.0 * x_offset;
 
     let rendered_stats =
-        stats::render_stats(&theme, card_stats.total_stars, card_stats.total_commits);
+        stats::render_stats(&theme, card_stats.total_stars, card_stats.total_commits, content_width);
     let rendered_langs = toplangs::render_top_languages(
         &theme,
         x_offset,
@@ -326,7 +328,7 @@ async fn build_languages_svg(
     let theme = query.theme();
     let width = query.width();
     let x_offset = 25.0_f64;
-    let y_offset = 35.0_f64;
+    let y_offset = 20.0_f64;
     let gap = 30.0_f64;
 
     let rendered_langs = toplangs::render_top_languages(

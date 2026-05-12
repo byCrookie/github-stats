@@ -6,7 +6,7 @@ consumption. This implementation uses filesystem caching to minimize memory usag
 
 # Example
 
-![byCrookie's Github Stats](https://github-stats.bycrookie.com/all)
+![byCrookie's Github Stats](https://github-stats.bycrookie.com/combined?lang_count=40)
 
 # Usage
 

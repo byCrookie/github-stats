@@ -1,6 +1,6 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": ["config:best-practices"],
   "vulnerabilityAlerts": {
     "labels": ["security"],
     "enabled": true
@@ -19,7 +19,9 @@
   ],
   "timezone": "Europe/Zurich",
   "schedule": ["at any time"],
-  "dependencyDashboard": true,
+  "dependencyDashboard": {
+    "enabled": true
+  },
   "minimumReleaseAge": "14 days",
   "prCreation": "not-pending",
   "internalChecksFilter": "strict",
@@ -31,5 +33,7 @@
   },
   "prConcurrentLimit": 0,
   "prHourlyLimit": 0,
-  "ignoreTests": true
+  "ignoreTests": true,
+  "separateMajorMinor": true,
+  "separateMultipleMajor": true
 }
